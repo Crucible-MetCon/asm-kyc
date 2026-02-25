@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js"
+    "build": "echo 'API uses tsx at runtime'",
+    "start": "tsx src/server.ts"
   },
   "dependencies": {
     "@asm-kyc/database": "workspace:*",
@@ -16,11 +16,11 @@
     "argon2": "^0.44.0",
     "dotenv": "^16.4.0",
     "fastify": "^5.2.0",
+    "tsx": "^4.19.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "tsx": "^4.19.0",
     "typescript": "~5.7.0"
   }
 }

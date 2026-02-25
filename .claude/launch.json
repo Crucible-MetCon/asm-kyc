@@ -3,20 +3,20 @@
   "configurations": [
     {
       "name": "api",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@asm-kyc/api", "dev"],
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["apps/api/node_modules/tsx/dist/cli.mjs", "watch", "apps/api/src/server.ts"],
       "port": 3001
     },
     {
       "name": "miner-pwa",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@asm-kyc/miner-pwa", "dev"],
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["apps/miner-pwa/node_modules/vite/bin/vite.js", "--config", "apps/miner-pwa/vite.config.ts"],
       "port": 5173
     },
     {
       "name": "admin-web",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@asm-kyc/admin-web", "dev"],
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["apps/admin-web/node_modules/vite/bin/vite.js", "--config", "apps/admin-web/vite.config.ts"],
       "port": 5174
     }
   ]

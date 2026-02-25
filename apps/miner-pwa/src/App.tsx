@@ -90,19 +90,19 @@ function AppContent() {
         tabs={[
           {
             label: t.nav.home,
-            icon: '\u{1F3E0}',
+            icon: '🏠',
             active: appScreen === 'home',
             onClick: () => setAppScreen('home'),
           },
           {
             label: t.nav.records,
-            icon: '\u{1F4CB}',
+            icon: '📋',
             active: appScreen === 'records',
             onClick: () => setAppScreen('records'),
           },
           {
             label: t.nav.profile,
-            icon: '\u{1F464}',
+            icon: '👤',
             active: appScreen === 'profile',
             onClick: () => setAppScreen('profile'),
           },

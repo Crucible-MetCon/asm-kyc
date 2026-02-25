@@ -45,19 +45,19 @@ export function HomeScreen({ onNavigate }: Props) {
       <div className="card-grid">
         <PlaceholderCard
           title={t.home.myProfile}
-          icon="\u{1F464}"
+          icon="👤"
           subtitle={t.home.viewProfile}
           onClick={() => onNavigate('profile')}
         />
         <PlaceholderCard
           title={t.home.newRecord}
-          icon="\u2795"
+          icon="➕"
           subtitle={t.home.createRecord}
           disabled
         />
         <PlaceholderCard
           title={t.home.myRecords}
-          icon="\u{1F4CB}"
+          icon="📋"
           subtitle={t.home.viewRecords}
           disabled
         />

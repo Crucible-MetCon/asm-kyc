@@ -17,7 +17,7 @@ COPY packages/database/package.json packages/database/package.json
 COPY packages/shared/package.json packages/shared/package.json
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Copy source code
 COPY packages/shared/ packages/shared/

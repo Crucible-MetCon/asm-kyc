@@ -1,0 +1,35 @@
+FROM node:20-slim
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Install OpenSSL for Prisma
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy workspace config files
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+
+# Copy all package.json files for dependency resolution
+COPY apps/api/package.json apps/api/package.json
+COPY packages/database/package.json packages/database/package.json
+COPY packages/shared/package.json packages/shared/package.json
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY packages/shared/ packages/shared/
+COPY packages/database/ packages/database/
+COPY apps/api/ apps/api/
+
+# Generate Prisma client
+RUN pnpm --filter @asm-kyc/database db:generate
+
+EXPOSE 3001
+
+ENV PORT=3001
+ENV NODE_ENV=production
+
+CMD ["pnpm", "--filter", "@asm-kyc/api", "start"]

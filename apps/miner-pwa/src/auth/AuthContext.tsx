@@ -14,6 +14,7 @@ interface AuthState {
     counterparty_type: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -71,8 +72,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const me = await apiFetch<MeResponse>('/me');
+      setUser(me);
+    } catch {
+      // silent fail
+    }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

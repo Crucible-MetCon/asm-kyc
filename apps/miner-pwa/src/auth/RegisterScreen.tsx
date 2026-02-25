@@ -2,20 +2,15 @@ import { useState, type FormEvent } from 'react';
 import { useAuth } from './AuthContext';
 import { ApiError } from '../api/client';
 import { COUNTERPARTY_TYPES } from '@asm-kyc/shared';
+import { useI18n } from '../i18n/I18nContext';
 
 interface Props {
   onSwitchToLogin: () => void;
 }
 
-const COUNTERPARTY_LABELS: Record<string, string> = {
-  INDIVIDUAL_ASM: 'Individual ASM Miner',
-  COOPERATIVE: 'Cooperative',
-  SMALL_SCALE_OPERATOR: 'Small-Scale Operator',
-  TRADER_AGGREGATOR: 'Trader / Aggregator',
-};
-
 export function RegisterScreen({ onSwitchToLogin }: Props) {
   const { register } = useAuth();
+  const { t } = useI18n();
   const [form, setForm] = useState({
     username: '',
     password: '',
@@ -45,10 +40,10 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
           const issues = body.message as { message: string }[];
           setError(issues.map((i) => i.message).join('. '));
         } else {
-          setError('Registration failed. Please check your details.');
+          setError(t.auth.registrationFailed);
         }
       } else {
-        setError('Connection error. Please try again.');
+        setError(t.auth.connectionError);
       }
     } finally {
       setSubmitting(false);
@@ -60,14 +55,14 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
       <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 400 }}>
         <div className="auth-header">
           <img src="/favicon.svg" alt="ASM Gold Trace" className="auth-logo" />
-          <h1>Create Account</h1>
-          <p>Register as a miner or trader</p>
+          <h1>{t.auth.createAccount}</h1>
+          <p>{t.auth.registerSubtitle}</p>
         </div>
 
         {error && <div className="error-message">{error}</div>}
 
         <div className="form-group">
-          <label htmlFor="full_name">Full Name</label>
+          <label htmlFor="full_name">{t.auth.fullName}</label>
           <input
             id="full_name"
             type="text"
@@ -79,7 +74,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="reg-username">Username</label>
+          <label htmlFor="reg-username">{t.auth.username}</label>
           <input
             id="reg-username"
             type="text"
@@ -92,7 +87,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="phone">Phone (E.164 format)</label>
+          <label htmlFor="phone">{t.auth.phone}</label>
           <input
             id="phone"
             type="tel"
@@ -105,7 +100,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="reg-password">Password</label>
+          <label htmlFor="reg-password">{t.auth.password}</label>
           <input
             id="reg-password"
             type="password"
@@ -119,7 +114,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="counterparty_type">Type</label>
+          <label htmlFor="counterparty_type">{t.auth.type}</label>
           <select
             id="counterparty_type"
             className="form-select"
@@ -128,19 +123,19 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
           >
             {COUNTERPARTY_TYPES.map((ct) => (
               <option key={ct} value={ct}>
-                {COUNTERPARTY_LABELS[ct] || ct}
+                {t.counterpartyType[ct]}
               </option>
             ))}
           </select>
         </div>
 
         <button type="submit" className="btn btn-primary btn-full" disabled={submitting}>
-          {submitting ? 'Creating account...' : 'Create Account'}
+          {submitting ? t.auth.creatingAccount : t.auth.createAccount}
         </button>
 
         <div className="auth-footer">
           <button type="button" className="btn btn-text" onClick={onSwitchToLogin}>
-            Already have an account? Sign in
+            {t.auth.alreadyHaveAccount}
           </button>
         </div>
       </form>

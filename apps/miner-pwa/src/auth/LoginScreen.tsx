@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useAuth } from './AuthContext';
 import { ApiError } from '../api/client';
+import { useI18n } from '../i18n/I18nContext';
 
 interface Props {
   onSwitchToRegister: () => void;
@@ -8,6 +9,7 @@ interface Props {
 
 export function LoginScreen({ onSwitchToRegister }: Props) {
   const { login } = useAuth();
+  const { t } = useI18n();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,9 +24,9 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
     } catch (err) {
       if (err instanceof ApiError) {
         const body = err.body as { message?: string } | null;
-        setError(body?.message || 'Invalid credentials');
+        setError(body?.message || t.auth.invalidCredentials);
       } else {
-        setError('Connection error. Please try again.');
+        setError(t.auth.connectionError);
       }
     } finally {
       setSubmitting(false);
@@ -37,13 +39,13 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
         <div className="auth-header">
           <img src="/favicon.svg" alt="ASM Gold Trace" className="auth-logo" />
           <h1>ASM Gold Trace</h1>
-          <p>Sign in to your account</p>
+          <p>{t.auth.signInSubtitle}</p>
         </div>
 
         {error && <div className="error-message">{error}</div>}
 
         <div className="form-group">
-          <label htmlFor="username">Username</label>
+          <label htmlFor="username">{t.auth.username}</label>
           <input
             id="username"
             type="text"
@@ -56,7 +58,7 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">{t.auth.password}</label>
           <input
             id="password"
             type="password"
@@ -69,12 +71,12 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
         </div>
 
         <button type="submit" className="btn btn-primary btn-full" disabled={submitting}>
-          {submitting ? 'Signing in...' : 'Sign In'}
+          {submitting ? t.auth.signingIn : t.auth.signIn}
         </button>
 
         <div className="auth-footer">
           <button type="button" className="btn btn-text" onClick={onSwitchToRegister}>
-            Don't have an account? Register
+            {t.auth.noAccount}
           </button>
         </div>
       </form>

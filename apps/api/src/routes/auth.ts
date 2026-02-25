@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { prisma } from '@asm-kyc/database';
 import { RegisterInputSchema, LoginInputSchema } from '@asm-kyc/shared';
 import { hashPassword, verifyPassword } from '../lib/password.js';
+import { serializeProfile } from '../lib/serialize.js';
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -74,13 +75,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       id: user.id,
       username: user.username,
       role: user.role,
-      profile: user.miner_profile
-        ? {
-            full_name: user.miner_profile.full_name,
-            counterparty_type: user.miner_profile.counterparty_type,
-            home_language: user.miner_profile.home_language,
-          }
-        : null,
+      profile: serializeProfile(user.miner_profile),
     });
   });
 
@@ -132,13 +127,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       id: user.id,
       username: user.username,
       role: user.role,
-      profile: user.miner_profile
-        ? {
-            full_name: user.miner_profile.full_name,
-            counterparty_type: user.miner_profile.counterparty_type,
-            home_language: user.miner_profile.home_language,
-          }
-        : null,
+      profile: serializeProfile(user.miner_profile),
     };
   });
 

@@ -8,3 +8,9 @@ export const COUNTERPARTY_TYPES = [
   'TRADER_AGGREGATOR',
 ] as const;
 export type CounterpartyType = (typeof COUNTERPARTY_TYPES)[number];
+
+export const GENDERS = ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'] as const;
+export type Gender = (typeof GENDERS)[number];
+
+export const LANGUAGES = ['en', 'bem'] as const;
+export type Language = (typeof LANGUAGES)[number];

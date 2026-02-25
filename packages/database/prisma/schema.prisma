@@ -55,18 +55,38 @@ model Session {
 }
 
 model MinerProfile {
-  user_id           String          @id @db.Uuid
-  counterparty_type CounterpartyType
-  full_name         String          @db.VarChar(200)
-  home_language     String          @default("en") @db.VarChar(10)
-  consent_version   String?         @db.VarChar(20)
-  consented_at      DateTime?
-  created_at        DateTime        @default(now())
-  updated_at        DateTime        @updatedAt
+  user_id               String           @id @db.Uuid
+  counterparty_type     CounterpartyType
+  full_name             String           @db.VarChar(200)
+  home_language         String           @default("en") @db.VarChar(10)
+
+  // Phase 2: onboarding fields
+  nrc_number            String?          @db.VarChar(30)
+  date_of_birth         DateTime?        @db.Date
+  gender                String?          @db.VarChar(20)
+  mine_site_name        String?          @db.VarChar(200)
+  mine_site_location    String?          @db.VarChar(500)
+  mining_license_number String?          @db.VarChar(100)
+  profile_completed_at  DateTime?
+
+  consent_version       String?          @db.VarChar(20)
+  consented_at          DateTime?
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
 
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("miner_profiles")
+}
+
+// Phase 2: consent text storage
+model ConsentVersion {
+  version      String   @id @db.VarChar(20)
+  published_at DateTime @default(now())
+  text_en      String   @db.Text
+  text_bem     String   @db.Text
+
+  @@map("consent_versions")
 }
 
 // ─── Placeholder models (expanded in later phases) ──────

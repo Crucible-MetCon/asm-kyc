@@ -4,6 +4,7 @@ import cookie from '@fastify/cookie';
 import { prisma } from '@asm-kyc/database';
 import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
+import { profileRoutes } from './routes/profile.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -29,6 +30,7 @@ export async function buildApp() {
 
   await app.register(authRoutes, { prefix: '/auth' });
   await app.register(meRoutes);
+  await app.register(profileRoutes);
 
   return app;
 }

@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@asm-kyc/api", "dev"],
+      "port": 3001
+    },
+    {
+      "name": "miner-pwa",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@asm-kyc/miner-pwa", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "admin-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@asm-kyc/admin-web", "dev"],
+      "port": 5174
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MINER_USER
+  TRADER_USER
+  ADMIN_USER
+}
+
+enum CounterpartyType {
+  INDIVIDUAL_ASM
+  COOPERATIVE
+  SMALL_SCALE_OPERATOR
+  TRADER_AGGREGATOR
+}
+
+// ─── Core models ────────────────────────────────────────
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  role          Role
+  username      String   @unique @db.VarChar(50)
+  phone_e164    String   @unique @db.VarChar(20)
+  password_hash String?  @db.Text
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  sessions            Session[]
+  miner_profile       MinerProfile?
+  passkey_credentials PasskeyCredential[]
+  documents           Document[]
+  audit_logs          AuditLog[]
+
+  @@map("users")
+}
+
+model Session {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([expires_at])
+  @@map("sessions")
+}
+
+model MinerProfile {
+  user_id           String          @id @db.Uuid
+  counterparty_type CounterpartyType
+  full_name         String          @db.VarChar(200)
+  home_language     String          @default("en") @db.VarChar(10)
+  consent_version   String?         @db.VarChar(20)
+  consented_at      DateTime?
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("miner_profiles")
+}
+
+// ─── Placeholder models (expanded in later phases) ──────
+
+// Expanded in Phase 7
+model PasskeyCredential {
+  id            String   @id @default(uuid()) @db.Uuid
+  user_id       String   @db.Uuid
+  credential_id Bytes
+  public_key    Bytes
+  counter       Int      @default(0)
+  created_at    DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("passkey_credentials")
+}
+
+// Expanded in Phase 3
+model Document {
+  id          String   @id @default(uuid()) @db.Uuid
+  user_id     String   @db.Uuid
+  doc_type    String   @db.VarChar(50)
+  file_path   String   @db.Text
+  uploaded_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+// Expanded in Phase 4
+model Record {
+  id         String   @id @default(uuid()) @db.Uuid
+  created_by String   @db.Uuid
+  status     String   @default("DRAFT") @db.VarChar(30)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  photos             RecordPhoto[]
+  source_entries     RecordSourceEntry[]
+  compliance_reviews ComplianceReview[]
+
+  @@map("records")
+}
+
+// Expanded in Phase 4
+model RecordPhoto {
+  id        String   @id @default(uuid()) @db.Uuid
+  record_id String   @db.Uuid
+  file_path String   @db.Text
+  taken_at  DateTime @default(now())
+
+  record Record @relation(fields: [record_id], references: [id], onDelete: Cascade)
+
+  @@map("record_photos")
+}
+
+// Expanded in Phase 4
+model RecordSourceEntry {
+  id        String @id @default(uuid()) @db.Uuid
+  record_id String @db.Uuid
+  label     String @db.VarChar(100)
+  value     String @db.Text
+
+  record Record @relation(fields: [record_id], references: [id], onDelete: Cascade)
+
+  @@map("record_source_entries")
+}
+
+// Expanded in Phase 5
+model ComplianceReview {
+  id          String   @id @default(uuid()) @db.Uuid
+  record_id   String   @db.Uuid
+  reviewer_id String   @db.Uuid
+  status      String   @db.VarChar(30)
+  notes       String?  @db.Text
+  reviewed_at DateTime @default(now())
+
+  record Record @relation(fields: [record_id], references: [id], onDelete: Cascade)
+
+  @@map("compliance_reviews")
+}
+
+// Expanded in Phase 8
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String?  @db.Uuid
+  action     String   @db.VarChar(100)
+  entity     String   @db.VarChar(100)
+  entity_id  String?  @db.Uuid
+  meta       Json?
+  created_at DateTime @default(now())
+
+  user User? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([entity, entity_id])
+  @@map("audit_logs")
+}

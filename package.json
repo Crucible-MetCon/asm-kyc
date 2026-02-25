@@ -1,0 +1,39 @@
+{
+  "name": "asm-kyc",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @asm-kyc/api --filter @asm-kyc/miner-pwa --filter @asm-kyc/admin-web dev",
+    "dev:api": "pnpm --filter @asm-kyc/api dev",
+    "dev:miner": "pnpm --filter @asm-kyc/miner-pwa dev",
+    "dev:admin": "pnpm --filter @asm-kyc/admin-web dev",
+    "build": "pnpm -r build",
+    "db:generate": "pnpm --filter @asm-kyc/database db:generate",
+    "db:migrate": "pnpm --filter @asm-kyc/database db:migrate",
+    "db:seed": "pnpm --filter @asm-kyc/database db:seed",
+    "db:studio": "pnpm --filter @asm-kyc/database db:studio",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.0.0",
+    "prettier": "^3.4.0",
+    "typescript": "~5.7.0",
+    "typescript-eslint": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "argon2",
+      "esbuild"
+    ]
+  }
+}

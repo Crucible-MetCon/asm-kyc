@@ -1,4 +1,4 @@
-export const ROLES = ['MINER_USER', 'TRADER_USER', 'ADMIN_USER'] as const;
+export const ROLES = ['MINER_USER', 'TRADER_USER', 'REFINER_USER', 'ADMIN_USER'] as const;
 export type Role = (typeof ROLES)[number];
 
 export const COUNTERPARTY_TYPES = [

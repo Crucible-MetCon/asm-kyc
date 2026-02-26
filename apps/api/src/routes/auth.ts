@@ -26,7 +26,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const { username, phone_e164, password, full_name, counterparty_type, home_language } =
+    const { username, phone_e164, password, full_name, counterparty_type, role, home_language } =
       parsed.data;
 
     const existing = await prisma.user.findFirst({
@@ -50,7 +50,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         username,
         phone_e164,
         password_hash,
-        role: 'MINER_USER',
+        role: role ?? 'MINER_USER',
         miner_profile: {
           create: {
             full_name,

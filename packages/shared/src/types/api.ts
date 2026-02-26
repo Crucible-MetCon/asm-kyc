@@ -128,3 +128,31 @@ export interface PurchaseListResponse {
   purchases: PurchaseListItem[];
   total: number;
 }
+
+// Sales partner types
+
+export interface SalesPartnerListItem {
+  id: string;
+  partner_id: string;
+  partner_name: string;
+  partner_username: string;
+  partner_role: string;
+  created_at: string;
+}
+
+export interface SalesPartnerListResponse {
+  partners: SalesPartnerListItem[];
+  total: number;
+}
+
+export interface AvailablePartnerListItem {
+  id: string;
+  username: string;
+  full_name: string;
+  role: string;
+}
+
+export interface AvailablePartnerListResponse {
+  partners: AvailablePartnerListItem[];
+  total: number;
+}

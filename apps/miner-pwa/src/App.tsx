@@ -16,11 +16,13 @@ import { AvailableRecordsList } from './trader/AvailableRecordsList';
 import { PurchaseFlow } from './trader/PurchaseFlow';
 import { PurchasesList } from './trader/PurchasesList';
 import { PurchaseDetail } from './trader/PurchaseDetail';
+import { SalesPartnerScreen } from './partners/SalesPartnerScreen';
 
 type AuthScreen = 'login' | 'register';
 type AppScreen =
   | 'home' | 'records' | 'profile' | 'onboarding' | 'record-create' | 'record-detail' | 'record-edit'
-  | 'trader-home' | 'available-records' | 'purchase-flow' | 'purchases' | 'purchase-detail';
+  | 'trader-home' | 'available-records' | 'purchase-flow' | 'purchases' | 'purchase-detail'
+  | 'sales-partners';
 
 function I18nWrapper({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -37,7 +39,8 @@ function AppContent() {
   const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
 
-  const isTrader = user?.role === 'TRADER_USER';
+  const isTraderOrRefiner = user?.role === 'TRADER_USER' || user?.role === 'REFINER_USER';
+  const isMiner = user?.role === 'MINER_USER';
 
   if (loading) {
     return <div className="screen-centered">{t.common.loading}</div>;
@@ -128,7 +131,10 @@ function AppContent() {
             onBack={() => setAppScreen('record-detail')}
           />
         );
-      // Trader screens
+      // Miner: sales partners
+      case 'sales-partners':
+        return <SalesPartnerScreen />;
+      // Trader/Refiner screens
       case 'trader-home':
         return <TraderHomeScreen onNavigate={(screen) => setAppScreen(screen as AppScreen)} />;
       case 'available-records':
@@ -169,7 +175,7 @@ function AppContent() {
         );
       case 'home':
       default:
-        if (isTrader) {
+        if (isTraderOrRefiner) {
           return <TraderHomeScreen onNavigate={(screen) => setAppScreen(screen as AppScreen)} />;
         }
         return <HomeScreen onNavigate={(screen) => setAppScreen(screen as AppScreen)} />;
@@ -178,7 +184,8 @@ function AppContent() {
 
   // Determine which tab is active
   const getActiveTab = () => {
-    if (appScreen.startsWith('record')) return isTrader ? 'available-records' : 'records';
+    if (appScreen === 'sales-partners') return 'sales-partners';
+    if (appScreen.startsWith('record')) return isTraderOrRefiner ? 'available-records' : 'records';
     if (appScreen.startsWith('purchase') || appScreen === 'purchase-flow') return 'purchases';
     if (appScreen === 'available-records') return 'available-records';
     if (appScreen === 'trader-home') return 'home';
@@ -189,25 +196,25 @@ function AppContent() {
   const traderTabs = [
     {
       label: t.nav.home,
-      icon: '🏠',
+      icon: '\u{1F3E0}',
       active: activeTab === 'home',
       onClick: () => setAppScreen('home'),
     },
     {
       label: t.nav.available,
-      icon: '🔍',
+      icon: '\u{1F50D}',
       active: activeTab === 'available-records',
       onClick: () => setAppScreen('available-records'),
     },
     {
       label: t.nav.purchases,
-      icon: '🛒',
+      icon: '\u{1F6D2}',
       active: activeTab === 'purchases',
       onClick: () => setAppScreen('purchases'),
     },
     {
       label: t.nav.profile,
-      icon: '👤',
+      icon: '\u{1F464}',
       active: activeTab === 'profile',
       onClick: () => setAppScreen('profile'),
     },
@@ -216,19 +223,25 @@ function AppContent() {
   const minerTabs = [
     {
       label: t.nav.home,
-      icon: '🏠',
+      icon: '\u{1F3E0}',
       active: activeTab === 'home',
       onClick: () => setAppScreen('home'),
     },
     {
       label: t.nav.records,
-      icon: '📋',
+      icon: '\u{1F4CB}',
       active: activeTab === 'records',
       onClick: () => setAppScreen('records'),
     },
     {
+      label: t.nav.partners,
+      icon: '\u{1F91D}',
+      active: activeTab === 'sales-partners',
+      onClick: () => setAppScreen('sales-partners'),
+    },
+    {
       label: t.nav.profile,
-      icon: '👤',
+      icon: '\u{1F464}',
       active: activeTab === 'profile',
       onClick: () => setAppScreen('profile'),
     },
@@ -237,7 +250,7 @@ function AppContent() {
   return (
     <div className="app-shell">
       <main className="main-content">{renderScreen()}</main>
-      <BottomTabBar tabs={isTrader ? traderTabs : minerTabs} />
+      <BottomTabBar tabs={isTraderOrRefiner ? traderTabs : minerTabs} />
     </div>
   );
 }

@@ -11,9 +11,9 @@ import {
 export const purchaseRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', authenticate);
 
-  // GET /purchases — list trader's purchases
+  // GET /purchases — list trader's/refiner's purchases
   app.get('/', {
-    preHandler: [requireRole('TRADER_USER')],
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER')],
     handler: async (request, reply) => {
       const user = request.user!;
 
@@ -34,7 +34,7 @@ export const purchaseRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /purchases/:id — purchase detail with linked records
   app.get<{ Params: { id: string } }>('/:id', {
-    preHandler: [requireRole('TRADER_USER')],
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER')],
     handler: async (request, reply) => {
       const user = request.user!;
 
@@ -75,7 +75,7 @@ export const purchaseRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /purchases — create a purchase (atomic transaction)
   app.post('/', {
-    preHandler: [requireRole('TRADER_USER')],
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER')],
     handler: async (request, reply) => {
       const parsed = PurchaseCreateSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -111,6 +111,22 @@ export const purchaseRoutes: FastifyPluginAsync = async (app) => {
           statusCode: 400,
           error: 'Bad Request',
           message: `Records not available for purchase: ${notSubmitted.map((r) => r.id).join(', ')}`,
+        });
+      }
+
+      // Validate that trader/refiner has a sales partnership with each record's miner
+      const minerIds = [...new Set(records.map((r) => r.created_by))];
+      const partnerships = await prisma.salesPartner.findMany({
+        where: { partner_id: user.id, miner_id: { in: minerIds } },
+        select: { miner_id: true },
+      });
+      const partnerMinerIds = new Set(partnerships.map((sp) => sp.miner_id));
+      const unauthorizedMiners = minerIds.filter((id) => !partnerMinerIds.has(id));
+      if (unauthorizedMiners.length > 0) {
+        return reply.status(403).send({
+          statusCode: 403,
+          error: 'Forbidden',
+          message: 'You do not have a sales partnership with one or more miners for these records',
         });
       }
 

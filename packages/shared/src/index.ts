@@ -2,6 +2,7 @@ export {
   RegisterInputSchema,
   LoginInputSchema,
   RoleEnum,
+  RegistrationRoleEnum,
   CounterpartyTypeEnum,
   type RegisterInput,
   type LoginInput,
@@ -40,6 +41,11 @@ export {
 } from './schemas/purchase.js';
 
 export {
+  SalesPartnerAddSchema,
+  type SalesPartnerAddInput,
+} from './schemas/sales-partner.js';
+
+export {
   type ApiError,
   type MeResponse,
   type UserProfile,
@@ -54,6 +60,10 @@ export {
   type PurchaseListItem,
   type PurchaseListResponse,
   type PurchaseItemResponse,
+  type SalesPartnerListItem,
+  type SalesPartnerListResponse,
+  type AvailablePartnerListItem,
+  type AvailablePartnerListResponse,
 } from './types/api.js';
 
 export {

@@ -52,20 +52,40 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
     },
   });
 
-  // GET /records/available — list SUBMITTED records for traders
+  // GET /records/available — list SUBMITTED records for traders/refiners
+  // Only shows records from miners who have this trader/refiner as a sales partner
   app.get('/available', {
-    preHandler: [requireRole('TRADER_USER')],
-    handler: async (_request, reply) => {
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER')],
+    handler: async (request, reply) => {
+      const user = request.user!;
+
+      // Find miners who have selected this trader/refiner as a sales partner
+      const partnerships = await prisma.salesPartner.findMany({
+        where: { partner_id: user.id },
+        select: { miner_id: true },
+      });
+      const partnerMinerIds = partnerships.map((sp) => sp.miner_id);
+
+      // If no miners have selected this trader, return empty
+      if (partnerMinerIds.length === 0) {
+        return reply.send({ records: [], total: 0 });
+      }
+
+      const where = {
+        status: 'SUBMITTED' as const,
+        created_by: { in: partnerMinerIds },
+      };
+
       const [records, total] = await Promise.all([
         prisma.record.findMany({
-          where: { status: 'SUBMITTED' },
+          where,
           include: {
             creator: { include: { miner_profile: true } },
             _count: { select: { photos: true } },
           },
           orderBy: { updated_at: 'desc' },
         }),
-        prisma.record.count({ where: { status: 'SUBMITTED' } }),
+        prisma.record.count({ where }),
       ]);
 
       return reply.send({

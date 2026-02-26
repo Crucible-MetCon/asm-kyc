@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-export const RoleEnum = z.enum(['MINER_USER', 'TRADER_USER', 'ADMIN_USER']);
+export const RoleEnum = z.enum(['MINER_USER', 'TRADER_USER', 'REFINER_USER', 'ADMIN_USER']);
+
+/** Roles that can be selected during self-registration (no admin) */
+export const RegistrationRoleEnum = z.enum(['MINER_USER', 'TRADER_USER', 'REFINER_USER']);
 
 export const CounterpartyTypeEnum = z.enum([
   'INDIVIDUAL_ASM',
@@ -19,6 +22,7 @@ export const RegisterInputSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters').max(128),
   full_name: z.string().min(1, 'Full name is required').max(200),
   counterparty_type: CounterpartyTypeEnum,
+  role: RegistrationRoleEnum.default('MINER_USER'),
   home_language: z.string().default('en'),
 });
 export type RegisterInput = z.infer<typeof RegisterInputSchema>;

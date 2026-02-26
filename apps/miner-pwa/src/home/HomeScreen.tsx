@@ -61,6 +61,12 @@ export function HomeScreen({ onNavigate }: Props) {
           subtitle={t.home.viewRecords}
           onClick={() => onNavigate('records')}
         />
+        <PlaceholderCard
+          title={t.salesPartners.managePartners}
+          icon="🤝"
+          subtitle={t.salesPartners.managePartnersSubtitle}
+          onClick={() => onNavigate('sales-partners')}
+        />
       </div>
     </div>
   );

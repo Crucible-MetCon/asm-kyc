@@ -11,6 +11,7 @@ import { meRoutes } from './routes/me.js';
 import { profileRoutes } from './routes/profile.js';
 import { recordRoutes } from './routes/records.js';
 import { purchaseRoutes } from './routes/purchases.js';
+import { salesPartnerRoutes } from './routes/sales-partners.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 });
@@ -42,6 +43,7 @@ export async function buildApp() {
       await api.register(profileRoutes);
       await api.register(recordRoutes, { prefix: '/records' });
       await api.register(purchaseRoutes, { prefix: '/purchases' });
+      await api.register(salesPartnerRoutes, { prefix: '/sales-partners' });
     },
     { prefix: '/api' },
   );

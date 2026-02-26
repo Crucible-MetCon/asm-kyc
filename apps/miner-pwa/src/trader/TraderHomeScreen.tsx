@@ -36,7 +36,7 @@ export function TraderHomeScreen({ onNavigate }: Props) {
               name: user?.profile?.full_name || user?.username || '',
             })}
           </h1>
-          <p className="subtitle">{t.trader.dashboard}</p>
+          <p className="subtitle">{user?.role === 'REFINER_USER' ? t.trader.refinerDashboard : t.trader.dashboard}</p>
         </div>
         <button className="btn btn-text" onClick={logout} style={{ fontSize: 14 }}>
           {t.auth.signOut}

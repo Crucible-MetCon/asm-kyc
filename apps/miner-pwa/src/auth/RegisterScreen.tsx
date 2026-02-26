@@ -8,6 +8,12 @@ interface Props {
   onSwitchToLogin: () => void;
 }
 
+const ROLE_OPTIONS = [
+  { value: 'MINER_USER', labelKey: 'roleMiner' as const },
+  { value: 'TRADER_USER', labelKey: 'roleTrader' as const },
+  { value: 'REFINER_USER', labelKey: 'roleRefiner' as const },
+];
+
 export function RegisterScreen({ onSwitchToLogin }: Props) {
   const { register } = useAuth();
   const { t } = useI18n();
@@ -17,6 +23,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
     phone_e164: '',
     full_name: '',
     counterparty_type: 'INDIVIDUAL_ASM',
+    role: 'MINER_USER',
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -25,12 +32,18 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const isMiner = form.role === 'MINER_USER';
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setSubmitting(true);
     try {
-      await register(form);
+      await register({
+        ...form,
+        // Non-miners get a default counterparty type
+        counterparty_type: isMiner ? form.counterparty_type : 'TRADER_AGGREGATOR',
+      });
     } catch (err) {
       if (err instanceof ApiError) {
         const body = err.body as { message?: string | unknown[] } | null;
@@ -60,6 +73,23 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
         </div>
 
         {error && <div className="error-message">{error}</div>}
+
+        {/* Role selector */}
+        <div className="form-group">
+          <label>{t.auth.role}</label>
+          <div className="role-selector">
+            {ROLE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={`role-option${form.role === opt.value ? ' role-option-active' : ''}`}
+                onClick={() => update('role', opt.value)}
+              >
+                {t.auth[opt.labelKey]}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="form-group">
           <label htmlFor="full_name">{t.auth.fullName}</label>
@@ -113,21 +143,24 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="counterparty_type">{t.auth.type}</label>
-          <select
-            id="counterparty_type"
-            className="form-select"
-            value={form.counterparty_type}
-            onChange={(e) => update('counterparty_type', e.target.value)}
-          >
-            {COUNTERPARTY_TYPES.map((ct) => (
-              <option key={ct} value={ct}>
-                {t.counterpartyType[ct]}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Only show counterparty type for miners */}
+        {isMiner && (
+          <div className="form-group">
+            <label htmlFor="counterparty_type">{t.auth.type}</label>
+            <select
+              id="counterparty_type"
+              className="form-select"
+              value={form.counterparty_type}
+              onChange={(e) => update('counterparty_type', e.target.value)}
+            >
+              {COUNTERPARTY_TYPES.map((ct) => (
+                <option key={ct} value={ct}>
+                  {t.counterpartyType[ct]}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <button type="submit" className="btn btn-primary btn-full" disabled={submitting}>
           {submitting ? t.auth.creatingAccount : t.auth.createAccount}

@@ -11,6 +11,7 @@ datasource db {
 enum Role {
   MINER_USER
   TRADER_USER
+  REFINER_USER
   ADMIN_USER
 }
 
@@ -45,6 +46,8 @@ model User {
   records             Record[]
   purchases           Purchase[]
   audit_logs          AuditLog[]
+  sales_partners_as_miner   SalesPartner[] @relation("MinerPartners")
+  sales_partners_as_partner SalesPartner[] @relation("PartnerMiners")
 
   @@map("users")
 }
@@ -85,6 +88,21 @@ model MinerProfile {
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("miner_profiles")
+}
+
+// Sales partner relationships (miner → trader/refiner)
+model SalesPartner {
+  id         String   @id @default(uuid()) @db.Uuid
+  miner_id   String   @db.Uuid
+  partner_id String   @db.Uuid
+  created_at DateTime @default(now())
+
+  miner   User @relation("MinerPartners", fields: [miner_id], references: [id], onDelete: Cascade)
+  partner User @relation("PartnerMiners", fields: [partner_id], references: [id], onDelete: Cascade)
+
+  @@unique([miner_id, partner_id])
+  @@index([partner_id])
+  @@map("sales_partners")
 }
 
 // Phase 2: consent text storage

@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
+import { useAuth } from '../auth/AuthContext';
 import { apiFetch, ApiError } from '../api/client';
 import { StepPersonalDetails } from './StepPersonalDetails';
 import { StepMiningDetails } from './StepMiningDetails';
+import { StepSalesPartners } from './StepSalesPartners';
 import { StepConsent } from './StepConsent';
 import { ProgressIndicator } from './ProgressIndicator';
 
@@ -24,10 +26,12 @@ interface Props {
   isEdit?: boolean;
 }
 
-const TOTAL_STEPS = 3;
-
 export function OnboardingFlow({ onComplete, initialData, isEdit }: Props) {
   const { t } = useI18n();
+  const { user } = useAuth();
+  const isMiner = user?.role === 'MINER_USER';
+  const TOTAL_STEPS = isMiner ? 4 : 3;
+
   const [step, setStep] = useState(1);
   const [data, setData] = useState<OnboardingData>({
     full_name: initialData?.full_name ?? '',
@@ -84,6 +88,11 @@ export function OnboardingFlow({ onComplete, initialData, isEdit }: Props) {
     }
   };
 
+  // For miners: Step 1 Personal → Step 2 Mining → Step 3 Sales Partners → Step 4 Consent
+  // For traders/refiners: Step 1 Personal → Step 2 Mining → Step 3 Consent
+  const consentStep = isMiner ? 4 : 3;
+  const salesPartnersStep = isMiner ? 3 : -1; // -1 means not shown
+
   return (
     <div className="screen">
       <h1>{isEdit ? t.profile.editProfile : t.onboarding.title}</h1>
@@ -103,14 +112,20 @@ export function OnboardingFlow({ onComplete, initialData, isEdit }: Props) {
           data={data}
           onChange={updateData}
           onBack={() => setStep(1)}
-          onNext={() => setStep(3)}
+          onNext={() => setStep(isMiner ? 3 : 3)}
         />
       )}
-      {step === 3 && (
+      {step === salesPartnersStep && (
+        <StepSalesPartners
+          onBack={() => setStep(2)}
+          onNext={() => setStep(consentStep)}
+        />
+      )}
+      {step === consentStep && (
         <StepConsent
           data={data}
           onChange={updateData}
-          onBack={() => setStep(2)}
+          onBack={() => setStep(isMiner ? salesPartnersStep : 2)}
           onSubmit={handleSubmit}
           submitting={submitting}
         />

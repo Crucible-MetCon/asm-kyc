@@ -5,6 +5,9 @@ import { apiFetch, ApiError } from '../api/client';
 import { RecordCreateSchema, RecordSubmitSchema } from '@asm-kyc/shared';
 import type { RecordResponse, RecordPhotoResponse } from '@asm-kyc/shared';
 import { PhotoCapture } from './PhotoCapture';
+import rawGoldIcon from '../assets/gold-types/raw-gold.png';
+import barIcon from '../assets/gold-types/bar.png';
+import lotIcon from '../assets/gold-types/lot.png';
 
 interface Props {
   record?: RecordResponse;
@@ -13,9 +16,9 @@ interface Props {
 }
 
 const GOLD_TYPE_OPTIONS = [
-  { value: 'RAW_GOLD', icon: '🪨' },
-  { value: 'BAR', icon: '🧱' },
-  { value: 'LOT', icon: '📦' },
+  { value: 'RAW_GOLD', icon: rawGoldIcon },
+  { value: 'BAR', icon: barIcon },
+  { value: 'LOT', icon: lotIcon },
 ] as const;
 
 export function RecordForm({ record, onSaved, onBack }: Props) {
@@ -248,7 +251,7 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
               className={`gold-type-option${form.gold_type === opt.value ? ' selected' : ''}`}
               onClick={() => update('gold_type', opt.value)}
             >
-              <span className="gold-type-icon">{opt.icon}</span>
+              <img src={opt.icon} alt={goldTypeLabel(opt.value)} className="gold-type-icon" />
               {goldTypeLabel(opt.value)}
             </button>
           ))}

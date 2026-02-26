@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
 import { useI18n, interpolate } from '../i18n/I18nContext';
 import type { RecordListResponse, RecordListItem } from '@asm-kyc/shared';
+import rawGoldIcon from '../assets/gold-types/raw-gold.png';
+import barIcon from '../assets/gold-types/bar.png';
+import lotIcon from '../assets/gold-types/lot.png';
+
+const GOLD_TYPE_ICONS: Record<string, string> = {
+  RAW_GOLD: rawGoldIcon,
+  BAR: barIcon,
+  LOT: lotIcon,
+};
 
 interface Props {
   onCreateNew: () => void;
@@ -64,9 +73,11 @@ export function RecordsList({ onCreateNew, onViewRecord }: Props) {
               className="record-card"
               onClick={() => onViewRecord(rec.id)}
             >
-              <div style={{ fontSize: 28 }}>
-                {rec.gold_type === 'BAR' ? '🧱' : rec.gold_type === 'LOT' ? '📦' : '🪨'}
-              </div>
+              <img
+                src={GOLD_TYPE_ICONS[rec.gold_type || 'RAW_GOLD'] || rawGoldIcon}
+                alt={goldTypeLabel(rec.gold_type)}
+                className="record-card-icon"
+              />
               <div className="record-card-body">
                 <div className="record-card-title">
                   {goldTypeLabel(rec.gold_type) || t.records.createTitle}

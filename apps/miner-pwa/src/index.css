@@ -664,7 +664,16 @@ a,
 }
 
 .gold-type-icon {
-  font-size: 24px;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.record-card-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 /* Photo Capture */

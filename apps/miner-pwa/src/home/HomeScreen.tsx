@@ -53,13 +53,13 @@ export function HomeScreen({ onNavigate }: Props) {
           title={t.home.newRecord}
           icon="➕"
           subtitle={t.home.createRecord}
-          disabled
+          onClick={() => onNavigate('record-create')}
         />
         <PlaceholderCard
           title={t.home.myRecords}
           icon="📋"
           subtitle={t.home.viewRecords}
-          disabled
+          onClick={() => onNavigate('records')}
         />
       </div>
     </div>

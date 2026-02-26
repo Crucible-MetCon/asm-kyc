@@ -5,9 +5,10 @@ import { prisma } from '@asm-kyc/database';
 import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
 import { profileRoutes } from './routes/profile.js';
+import { recordRoutes } from './routes/records.js';
 
 export async function buildApp() {
-  const app = Fastify({ logger: true });
+  const app = Fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 });
 
   const allowedOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',')
@@ -31,6 +32,7 @@ export async function buildApp() {
   await app.register(authRoutes, { prefix: '/auth' });
   await app.register(meRoutes);
   await app.register(profileRoutes);
+  await app.register(recordRoutes, { prefix: '/records' });
 
   return app;
 }

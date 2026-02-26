@@ -14,3 +14,9 @@ export type Gender = (typeof GENDERS)[number];
 
 export const LANGUAGES = ['en', 'bem'] as const;
 export type Language = (typeof LANGUAGES)[number];
+
+export const GOLD_TYPES = ['RAW_GOLD', 'BAR', 'LOT'] as const;
+export type GoldType = (typeof GOLD_TYPES)[number];
+
+export const RECORD_STATUSES = ['DRAFT', 'SUBMITTED'] as const;
+export type RecordStatus = (typeof RECORD_STATUSES)[number];

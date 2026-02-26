@@ -30,3 +30,40 @@ export interface ConsentVersionResponse {
   version: string;
   text: string;
 }
+
+export interface RecordPhotoResponse {
+  id: string;
+  photo_data: string;
+  mime_type: string;
+  taken_at: string;
+}
+
+export interface RecordResponse {
+  id: string;
+  status: string;
+  weight_grams: number | null;
+  estimated_purity: number | null;
+  origin_mine_site: string | null;
+  extraction_date: string | null;
+  gold_type: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  photos: RecordPhotoResponse[];
+}
+
+export interface RecordListItem {
+  id: string;
+  status: string;
+  weight_grams: number | null;
+  gold_type: string | null;
+  origin_mine_site: string | null;
+  created_at: string;
+  updated_at: string;
+  photo_count: number;
+}
+
+export interface RecordListResponse {
+  records: RecordListItem[];
+  total: number;
+}

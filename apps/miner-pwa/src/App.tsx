@@ -7,9 +7,13 @@ import { HomeScreen } from './home/HomeScreen';
 import { ProfileScreen } from './profile/ProfileScreen';
 import { OnboardingFlow } from './onboarding/OnboardingFlow';
 import { BottomTabBar } from './layout/BottomTabBar';
+import { RecordsList } from './records/RecordsList';
+import { RecordForm } from './records/RecordForm';
+import { RecordDetail } from './records/RecordDetail';
+import { RecordFormWrapper } from './records/RecordFormWrapper';
 
 type AuthScreen = 'login' | 'register';
-type AppScreen = 'home' | 'records' | 'profile' | 'onboarding';
+type AppScreen = 'home' | 'records' | 'profile' | 'onboarding' | 'record-create' | 'record-detail' | 'record-edit';
 
 function I18nWrapper({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -22,6 +26,7 @@ function AppContent() {
   const { t } = useI18n();
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
   const [appScreen, setAppScreen] = useState<AppScreen>('home');
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
 
   if (loading) {
     return <div className="screen-centered">{t.common.loading}</div>;
@@ -72,16 +77,54 @@ function AppContent() {
         return <ProfileScreen onEdit={() => setAppScreen('onboarding')} />;
       case 'records':
         return (
-          <div className="screen">
-            <h1>{t.nav.records}</h1>
-            <p style={{ color: 'var(--color-text-secondary)' }}>Coming in Phase 4</p>
-          </div>
+          <RecordsList
+            onCreateNew={() => setAppScreen('record-create')}
+            onViewRecord={(id) => {
+              setSelectedRecordId(id);
+              setAppScreen('record-detail');
+            }}
+          />
+        );
+      case 'record-create':
+        return (
+          <RecordForm
+            onSaved={(record) => {
+              setSelectedRecordId(record.id);
+              setAppScreen('record-detail');
+            }}
+            onBack={() => setAppScreen('records')}
+          />
+        );
+      case 'record-detail':
+        return (
+          <RecordDetail
+            recordId={selectedRecordId!}
+            onBack={() => setAppScreen('records')}
+            onEdit={(id) => {
+              setSelectedRecordId(id);
+              setAppScreen('record-edit');
+            }}
+          />
+        );
+      case 'record-edit':
+        return (
+          <RecordFormWrapper
+            recordId={selectedRecordId!}
+            onSaved={(record) => {
+              setSelectedRecordId(record.id);
+              setAppScreen('record-detail');
+            }}
+            onBack={() => setAppScreen('record-detail')}
+          />
         );
       case 'home':
       default:
-        return <HomeScreen onNavigate={setAppScreen} />;
+        return <HomeScreen onNavigate={(screen) => setAppScreen(screen as AppScreen)} />;
     }
   };
+
+  // Determine which tab is active (record sub-screens still highlight Records tab)
+  const activeTab = appScreen.startsWith('record') ? 'records' : appScreen;
 
   return (
     <div className="app-shell">
@@ -91,19 +134,19 @@ function AppContent() {
           {
             label: t.nav.home,
             icon: '🏠',
-            active: appScreen === 'home',
+            active: activeTab === 'home',
             onClick: () => setAppScreen('home'),
           },
           {
             label: t.nav.records,
             icon: '📋',
-            active: appScreen === 'records',
+            active: activeTab === 'records',
             onClick: () => setAppScreen('records'),
           },
           {
             label: t.nav.profile,
             icon: '👤',
-            active: appScreen === 'profile',
+            active: activeTab === 'profile',
             onClick: () => setAppScreen('profile'),
           },
         ]}

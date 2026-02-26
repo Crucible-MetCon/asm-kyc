@@ -23,10 +23,26 @@ export {
 } from './schemas/profile.js';
 
 export {
+  GoldTypeEnum,
+  RecordCreateSchema,
+  RecordUpdateSchema,
+  RecordSubmitSchema,
+  RecordPhotoUploadSchema,
+  type RecordCreate,
+  type RecordUpdate,
+  type RecordSubmit,
+  type RecordPhotoUpload,
+} from './schemas/record.js';
+
+export {
   type ApiError,
   type MeResponse,
   type UserProfile,
   type ConsentVersionResponse,
+  type RecordResponse,
+  type RecordPhotoResponse,
+  type RecordListItem,
+  type RecordListResponse,
 } from './types/api.js';
 
 export {
@@ -34,8 +50,12 @@ export {
   COUNTERPARTY_TYPES,
   GENDERS,
   LANGUAGES,
+  GOLD_TYPES,
+  RECORD_STATUSES,
   type Role,
   type CounterpartyType,
   type Gender,
   type Language,
+  type GoldType,
+  type RecordStatus,
 } from './constants.js';

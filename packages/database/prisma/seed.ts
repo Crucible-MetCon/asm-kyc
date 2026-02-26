@@ -102,11 +102,45 @@ Ndasumina ukuti nabelenga no kumfwikisha ifyo fyalembwa, kabili ndasumina pa kut
     },
   });
 
+  // Sample records for miner1
+  const miner1 = await prisma.user.findUnique({ where: { username: 'miner1' } });
+  if (miner1) {
+    await prisma.record.upsert({
+      where: { id: '00000000-0000-0000-0000-000000000001' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0000-000000000001',
+        created_by: miner1.id,
+        status: 'SUBMITTED',
+        weight_grams: 125.5,
+        estimated_purity: 85.0,
+        origin_mine_site: 'Mumbwa Mine Site',
+        extraction_date: new Date('2026-02-20'),
+        gold_type: 'RAW_GOLD',
+        notes: 'Sample submitted record',
+      },
+    });
+
+    await prisma.record.upsert({
+      where: { id: '00000000-0000-0000-0000-000000000002' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0000-000000000002',
+        created_by: miner1.id,
+        status: 'DRAFT',
+        weight_grams: 50.0,
+        gold_type: 'BAR',
+        origin_mine_site: 'Mumbwa Mine Site',
+      },
+    });
+  }
+
   console.log('Seed complete:');
   console.log('  admin  / admin123  (ADMIN_USER)');
   console.log('  miner1 / miner123  (MINER_USER)');
   console.log('  trader1/ trader123  (TRADER_USER)');
   console.log('  consent v1.0 (en + bem)');
+  console.log('  2 sample records for miner1');
 }
 
 main()

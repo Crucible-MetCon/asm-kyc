@@ -21,6 +21,12 @@ enum CounterpartyType {
   TRADER_AGGREGATOR
 }
 
+enum GoldType {
+  RAW_GOLD
+  BAR
+  LOT
+}
+
 // ─── Core models ────────────────────────────────────────
 
 model User {
@@ -36,6 +42,7 @@ model User {
   miner_profile       MinerProfile?
   passkey_credentials PasskeyCredential[]
   documents           Document[]
+  records             Record[]
   audit_logs          AuditLog[]
 
   @@map("users")
@@ -118,30 +125,43 @@ model Document {
   @@map("documents")
 }
 
-// Expanded in Phase 4
+// Phase 3: gold record with structured fields
 model Record {
-  id         String   @id @default(uuid()) @db.Uuid
-  created_by String   @db.Uuid
-  status     String   @default("DRAFT") @db.VarChar(30)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id               String    @id @default(uuid()) @db.Uuid
+  created_by       String    @db.Uuid
+  status           String    @default("DRAFT") @db.VarChar(30)
 
+  weight_grams     Decimal?  @db.Decimal(10, 3)
+  estimated_purity Decimal?  @db.Decimal(5, 2)
+  origin_mine_site String?   @db.VarChar(500)
+  extraction_date  DateTime? @db.Date
+  gold_type        GoldType?
+  notes            String?   @db.Text
+
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  creator            User              @relation(fields: [created_by], references: [id])
   photos             RecordPhoto[]
   source_entries     RecordSourceEntry[]
   compliance_reviews ComplianceReview[]
 
+  @@index([created_by])
+  @@index([status])
   @@map("records")
 }
 
-// Expanded in Phase 4
+// Phase 3: photo evidence stored as base64
 model RecordPhoto {
-  id        String   @id @default(uuid()) @db.Uuid
-  record_id String   @db.Uuid
-  file_path String   @db.Text
-  taken_at  DateTime @default(now())
+  id         String   @id @default(uuid()) @db.Uuid
+  record_id  String   @db.Uuid
+  photo_data String   @db.Text
+  mime_type  String   @default("image/jpeg") @db.VarChar(50)
+  taken_at   DateTime @default(now())
 
   record Record @relation(fields: [record_id], references: [id], onDelete: Cascade)
 
+  @@index([record_id])
   @@map("record_photos")
 }
 

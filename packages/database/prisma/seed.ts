@@ -48,7 +48,7 @@ async function main() {
     },
   });
 
-  await prisma.user.upsert({
+  const trader1User = await prisma.user.upsert({
     where: { username: 'trader1' },
     update: {},
     create: {
@@ -56,6 +56,60 @@ async function main() {
       phone_e164: '+260600000003',
       password_hash: traderHash,
       role: 'TRADER_USER',
+      miner_profile: {
+        create: {
+          full_name: 'Test Trader',
+          counterparty_type: 'TRADER_AGGREGATOR',
+          home_language: 'en',
+          profile_completed_at: new Date(),
+        },
+      },
+    },
+  });
+
+  // Ensure trader has a profile (handles case where user existed before profile)
+  const traderProfile = await prisma.minerProfile.findUnique({
+    where: { user_id: trader1User.id },
+  });
+  if (!traderProfile) {
+    await prisma.minerProfile.create({
+      data: {
+        user_id: trader1User.id,
+        full_name: 'Test Trader',
+        counterparty_type: 'TRADER_AGGREGATOR',
+        home_language: 'en',
+        profile_completed_at: new Date(),
+      },
+    });
+    console.log('  Created missing trader1 profile');
+  }
+
+  // Second miner for variety
+  const miner2Hash = await hash('miner123');
+  await prisma.user.upsert({
+    where: { username: 'miner2' },
+    update: {},
+    create: {
+      username: 'miner2',
+      phone_e164: '+260600000004',
+      password_hash: miner2Hash,
+      role: 'MINER_USER',
+      miner_profile: {
+        create: {
+          full_name: 'Jane Mwila',
+          counterparty_type: 'COOPERATIVE',
+          home_language: 'bem',
+          nrc_number: '654321/21/2',
+          date_of_birth: new Date('1990-06-15'),
+          gender: 'female',
+          mine_site_name: 'Kasempa Gold Mine',
+          mine_site_location: '-13.45, 26.80 (Kasempa District)',
+          mining_license_number: 'ZM-KAS-2025-002',
+          profile_completed_at: new Date(),
+          consent_version: 'v1.0',
+          consented_at: new Date(),
+        },
+      },
     },
   });
 
@@ -133,14 +187,101 @@ Ndasumina ukuti nabelenga no kumfwikisha ifyo fyalembwa, kabili ndasumina pa kut
         origin_mine_site: 'Mumbwa Mine Site',
       },
     });
+
+    // Additional submitted records for trader browsing
+    await prisma.record.upsert({
+      where: { id: '00000000-0000-0000-0000-000000000003' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0000-000000000003',
+        created_by: miner1.id,
+        status: 'SUBMITTED',
+        weight_grams: 200.0,
+        estimated_purity: 90.5,
+        origin_mine_site: 'Mumbwa Mine Site',
+        extraction_date: new Date('2026-02-22'),
+        gold_type: 'BAR',
+        notes: 'High purity bar',
+      },
+    });
+  }
+
+  // Records for miner2
+  const miner2 = await prisma.user.findUnique({ where: { username: 'miner2' } });
+  if (miner2) {
+    await prisma.record.upsert({
+      where: { id: '00000000-0000-0000-0000-000000000004' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0000-000000000004',
+        created_by: miner2.id,
+        status: 'SUBMITTED',
+        weight_grams: 75.0,
+        estimated_purity: 80.0,
+        origin_mine_site: 'Kasempa Gold Mine',
+        extraction_date: new Date('2026-02-18'),
+        gold_type: 'RAW_GOLD',
+        notes: 'From Kasempa cooperative batch',
+      },
+    });
+
+    await prisma.record.upsert({
+      where: { id: '00000000-0000-0000-0000-000000000005' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0000-000000000005',
+        created_by: miner2.id,
+        status: 'SUBMITTED',
+        weight_grams: 300.0,
+        estimated_purity: 88.0,
+        origin_mine_site: 'Kasempa Gold Mine',
+        extraction_date: new Date('2026-02-24'),
+        gold_type: 'LOT',
+      },
+    });
+  }
+
+  // Sample purchase: trader1 purchases miner2's first record
+  if (trader1User && miner2) {
+    const existingPurchase = await prisma.purchase.findFirst({
+      where: { id: '00000000-0000-0000-0000-000000000010' },
+    });
+    if (!existingPurchase) {
+      await prisma.$transaction(async (tx) => {
+        await tx.purchase.create({
+          data: {
+            id: '00000000-0000-0000-0000-000000000010',
+            trader_id: trader1User.id,
+            total_weight: 75.0,
+            total_items: 1,
+            notes: 'First test purchase',
+            items: {
+              create: {
+                record_id: '00000000-0000-0000-0000-000000000004',
+              },
+            },
+          },
+        });
+        await tx.record.update({
+          where: { id: '00000000-0000-0000-0000-000000000004' },
+          data: {
+            status: 'PURCHASED',
+            purchased_by: trader1User.id,
+            purchased_at: new Date(),
+          },
+        });
+      });
+    }
   }
 
   console.log('Seed complete:');
   console.log('  admin  / admin123  (ADMIN_USER)');
   console.log('  miner1 / miner123  (MINER_USER)');
+  console.log('  miner2 / miner123  (MINER_USER)');
   console.log('  trader1/ trader123  (TRADER_USER)');
   console.log('  consent v1.0 (en + bem)');
-  console.log('  2 sample records for miner1');
+  console.log('  5 sample records (3 submitted, 1 draft, 1 purchased)');
+  console.log('  1 sample purchase (trader1 → miner2 record)');
 }
 
 main()

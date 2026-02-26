@@ -43,6 +43,7 @@ model User {
   passkey_credentials PasskeyCredential[]
   documents           Document[]
   records             Record[]
+  purchases           Purchase[]
   audit_logs          AuditLog[]
 
   @@map("users")
@@ -138,11 +139,16 @@ model Record {
   gold_type        GoldType?
   notes            String?   @db.Text
 
+  // Phase 4: purchase tracking
+  purchased_by     String?   @db.Uuid
+  purchased_at     DateTime?
+
   created_at       DateTime  @default(now())
   updated_at       DateTime  @updatedAt
 
   creator            User              @relation(fields: [created_by], references: [id])
   photos             RecordPhoto[]
+  purchase_items     PurchaseItem[]
   source_entries     RecordSourceEntry[]
   compliance_reviews ComplianceReview[]
 
@@ -163,6 +169,37 @@ model RecordPhoto {
 
   @@index([record_id])
   @@map("record_photos")
+}
+
+// Phase 4: trader purchases (chain of custody)
+model Purchase {
+  id           String   @id @default(uuid()) @db.Uuid
+  trader_id    String   @db.Uuid
+  total_weight Decimal  @db.Decimal(10, 3)
+  total_items  Int
+  notes        String?  @db.Text
+  purchased_at DateTime @default(now())
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  trader User           @relation(fields: [trader_id], references: [id])
+  items  PurchaseItem[]
+
+  @@index([trader_id])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id          String @id @default(uuid()) @db.Uuid
+  purchase_id String @db.Uuid
+  record_id   String @db.Uuid
+
+  purchase Purchase @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+  record   Record   @relation(fields: [record_id], references: [id])
+
+  @@unique([purchase_id, record_id])
+  @@index([record_id])
+  @@map("purchase_items")
 }
 
 // Expanded in Phase 4

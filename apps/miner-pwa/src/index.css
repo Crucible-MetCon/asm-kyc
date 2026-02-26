@@ -901,3 +901,164 @@ a,
     transform: translateX(-50%) translateY(0);
   }
 }
+
+/* ─── Phase 4: Trader & Purchase Styles ─── */
+
+.status-purchased {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+/* Selectable Record Card (trader multi-select) */
+
+.record-card-selectable {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 2px solid var(--color-border);
+  cursor: pointer;
+  min-height: var(--touch-min);
+  transition: border-color 0.15s;
+}
+
+.record-card-selectable.selected {
+  border-color: var(--color-gold);
+  background: rgba(184, 134, 11, 0.04);
+}
+
+.record-card-checkbox {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--color-gold);
+  flex-shrink: 0;
+}
+
+/* Sticky Purchase Footer */
+
+.purchase-footer {
+  position: fixed;
+  bottom: 72px;
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding: 12px 16px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.purchase-footer-info {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.purchase-footer-info strong {
+  color: var(--color-text);
+}
+
+.main-content-with-footer {
+  padding-bottom: 140px;
+}
+
+/* Stats Grid (trader home) */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.stat-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-gold);
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: 4px;
+}
+
+/* Purchase Summary */
+
+.purchase-summary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
+.purchase-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.purchase-summary-row:last-child {
+  border-bottom: none;
+  font-weight: 600;
+}
+
+/* Purchase Card (purchases list) */
+
+.purchase-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  min-height: var(--touch-min);
+  margin-bottom: 12px;
+}
+
+.purchase-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.purchase-card-title {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.purchase-card-meta {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+/* Purchase Info section on miner record detail */
+
+.purchase-info-section {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-top: 12px;
+}

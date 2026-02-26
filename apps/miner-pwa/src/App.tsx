@@ -11,9 +11,16 @@ import { RecordsList } from './records/RecordsList';
 import { RecordForm } from './records/RecordForm';
 import { RecordDetail } from './records/RecordDetail';
 import { RecordFormWrapper } from './records/RecordFormWrapper';
+import { TraderHomeScreen } from './trader/TraderHomeScreen';
+import { AvailableRecordsList } from './trader/AvailableRecordsList';
+import { PurchaseFlow } from './trader/PurchaseFlow';
+import { PurchasesList } from './trader/PurchasesList';
+import { PurchaseDetail } from './trader/PurchaseDetail';
 
 type AuthScreen = 'login' | 'register';
-type AppScreen = 'home' | 'records' | 'profile' | 'onboarding' | 'record-create' | 'record-detail' | 'record-edit';
+type AppScreen =
+  | 'home' | 'records' | 'profile' | 'onboarding' | 'record-create' | 'record-detail' | 'record-edit'
+  | 'trader-home' | 'available-records' | 'purchase-flow' | 'purchases' | 'purchase-detail';
 
 function I18nWrapper({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -27,6 +34,10 @@ function AppContent() {
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
   const [appScreen, setAppScreen] = useState<AppScreen>('home');
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
+  const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
+
+  const isTrader = user?.role === 'TRADER_USER';
 
   if (loading) {
     return <div className="screen-centered">{t.common.loading}</div>;
@@ -43,7 +54,7 @@ function AppContent() {
   // Check if profile needs onboarding
   const needsOnboarding = !user.profile?.profile_completed_at;
 
-  if (appScreen === 'onboarding' || (needsOnboarding && appScreen === 'home')) {
+  if (appScreen === 'onboarding' || (needsOnboarding && (appScreen === 'home' || appScreen === 'trader-home'))) {
     return (
       <OnboardingFlow
         onComplete={async () => {
@@ -117,40 +128,116 @@ function AppContent() {
             onBack={() => setAppScreen('record-detail')}
           />
         );
+      // Trader screens
+      case 'trader-home':
+        return <TraderHomeScreen onNavigate={(screen) => setAppScreen(screen as AppScreen)} />;
+      case 'available-records':
+        return (
+          <AvailableRecordsList
+            onPurchase={(ids) => {
+              setSelectedRecordIds(ids);
+              setAppScreen('purchase-flow');
+            }}
+          />
+        );
+      case 'purchase-flow':
+        return (
+          <PurchaseFlow
+            recordIds={selectedRecordIds}
+            onComplete={(purchaseId) => {
+              setSelectedPurchaseId(purchaseId);
+              setAppScreen('purchase-detail');
+            }}
+            onBack={() => setAppScreen('available-records')}
+          />
+        );
+      case 'purchases':
+        return (
+          <PurchasesList
+            onViewPurchase={(id) => {
+              setSelectedPurchaseId(id);
+              setAppScreen('purchase-detail');
+            }}
+          />
+        );
+      case 'purchase-detail':
+        return (
+          <PurchaseDetail
+            purchaseId={selectedPurchaseId!}
+            onBack={() => setAppScreen('purchases')}
+          />
+        );
       case 'home':
       default:
+        if (isTrader) {
+          return <TraderHomeScreen onNavigate={(screen) => setAppScreen(screen as AppScreen)} />;
+        }
         return <HomeScreen onNavigate={(screen) => setAppScreen(screen as AppScreen)} />;
     }
   };
 
-  // Determine which tab is active (record sub-screens still highlight Records tab)
-  const activeTab = appScreen.startsWith('record') ? 'records' : appScreen;
+  // Determine which tab is active
+  const getActiveTab = () => {
+    if (appScreen.startsWith('record')) return isTrader ? 'available-records' : 'records';
+    if (appScreen.startsWith('purchase') || appScreen === 'purchase-flow') return 'purchases';
+    if (appScreen === 'available-records') return 'available-records';
+    if (appScreen === 'trader-home') return 'home';
+    return appScreen;
+  };
+  const activeTab = getActiveTab();
+
+  const traderTabs = [
+    {
+      label: t.nav.home,
+      icon: '🏠',
+      active: activeTab === 'home',
+      onClick: () => setAppScreen('home'),
+    },
+    {
+      label: t.nav.available,
+      icon: '🔍',
+      active: activeTab === 'available-records',
+      onClick: () => setAppScreen('available-records'),
+    },
+    {
+      label: t.nav.purchases,
+      icon: '🛒',
+      active: activeTab === 'purchases',
+      onClick: () => setAppScreen('purchases'),
+    },
+    {
+      label: t.nav.profile,
+      icon: '👤',
+      active: activeTab === 'profile',
+      onClick: () => setAppScreen('profile'),
+    },
+  ];
+
+  const minerTabs = [
+    {
+      label: t.nav.home,
+      icon: '🏠',
+      active: activeTab === 'home',
+      onClick: () => setAppScreen('home'),
+    },
+    {
+      label: t.nav.records,
+      icon: '📋',
+      active: activeTab === 'records',
+      onClick: () => setAppScreen('records'),
+    },
+    {
+      label: t.nav.profile,
+      icon: '👤',
+      active: activeTab === 'profile',
+      onClick: () => setAppScreen('profile'),
+    },
+  ];
 
   return (
     <div className="app-shell">
       <main className="main-content">{renderScreen()}</main>
-      <BottomTabBar
-        tabs={[
-          {
-            label: t.nav.home,
-            icon: '🏠',
-            active: activeTab === 'home',
-            onClick: () => setAppScreen('home'),
-          },
-          {
-            label: t.nav.records,
-            icon: '📋',
-            active: activeTab === 'records',
-            onClick: () => setAppScreen('records'),
-          },
-          {
-            label: t.nav.profile,
-            icon: '👤',
-            active: activeTab === 'profile',
-            onClick: () => setAppScreen('profile'),
-          },
-        ]}
-      />
+      <BottomTabBar tabs={isTrader ? traderTabs : minerTabs} />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   serializeRecord,
   serializeRecordListItem,
   serializeRecordPhoto,
+  serializeAvailableRecord,
 } from '../lib/serialize.js';
 
 export const recordRoutes: FastifyPluginAsync = async (app) => {
@@ -51,6 +52,29 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
     },
   });
 
+  // GET /records/available — list SUBMITTED records for traders
+  app.get('/available', {
+    preHandler: [requireRole('TRADER_USER')],
+    handler: async (_request, reply) => {
+      const [records, total] = await Promise.all([
+        prisma.record.findMany({
+          where: { status: 'SUBMITTED' },
+          include: {
+            creator: { include: { miner_profile: true } },
+            _count: { select: { photos: true } },
+          },
+          orderBy: { updated_at: 'desc' },
+        }),
+        prisma.record.count({ where: { status: 'SUBMITTED' } }),
+      ]);
+
+      return reply.send({
+        records: records.map(serializeAvailableRecord),
+        total,
+      });
+    },
+  });
+
   // GET /records — list my records
   app.get('/', async (request, reply) => {
     const user = request.user!;
@@ -81,11 +105,21 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
     if (!record) {
       return reply.status(404).send({ statusCode: 404, error: 'Not Found', message: 'Record not found' });
     }
-    if (record.created_by !== user.id) {
+    // Allow access: record owner OR trader who purchased it
+    if (record.created_by !== user.id && record.purchased_by !== user.id) {
       return reply.status(403).send({ statusCode: 403, error: 'Forbidden', message: 'Not your record' });
     }
 
-    return reply.send(serializeRecord(record));
+    // Load purchaser info for miner-side transparency
+    let purchasedByUser = null;
+    if (record.purchased_by) {
+      purchasedByUser = await prisma.user.findUnique({
+        where: { id: record.purchased_by },
+        include: { miner_profile: true },
+      });
+    }
+
+    return reply.send(serializeRecord({ ...record, purchased_by_user: purchasedByUser }));
   });
 
   // PATCH /records/:id — update a draft

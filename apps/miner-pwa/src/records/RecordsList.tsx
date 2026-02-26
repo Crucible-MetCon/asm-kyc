@@ -89,7 +89,11 @@ export function RecordsList({ onCreateNew, onViewRecord }: Props) {
                 </div>
               </div>
               <span className={`status-badge status-${rec.status.toLowerCase()}`}>
-                {rec.status === 'SUBMITTED' ? t.records.statusSubmitted : t.records.statusDraft}
+                {rec.status === 'PURCHASED'
+                  ? t.records.statusPurchased
+                  : rec.status === 'SUBMITTED'
+                  ? t.records.statusSubmitted
+                  : t.records.statusDraft}
               </span>
             </div>
           ))}

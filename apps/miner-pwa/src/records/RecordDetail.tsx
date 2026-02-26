@@ -50,6 +50,13 @@ export function RecordDetail({ recordId, onBack, onEdit }: Props) {
   }
 
   const isDraft = record.status === 'DRAFT';
+  const isPurchased = record.status === 'PURCHASED';
+
+  const statusLabel = isDraft
+    ? t.records.statusDraft
+    : isPurchased
+    ? t.records.statusPurchased
+    : t.records.statusSubmitted;
 
   return (
     <div className="screen">
@@ -58,7 +65,7 @@ export function RecordDetail({ recordId, onBack, onEdit }: Props) {
           ← {t.common.back}
         </button>
         <span className={`status-badge status-${record.status.toLowerCase()}`}>
-          {isDraft ? t.records.statusDraft : t.records.statusSubmitted}
+          {statusLabel}
         </span>
       </div>
 
@@ -130,6 +137,23 @@ export function RecordDetail({ recordId, onBack, onEdit }: Props) {
           <span className="profile-field-value">{formatDate(record.updated_at)}</span>
         </div>
       </div>
+
+      {/* Purchase Information — shown when record is PURCHASED */}
+      {isPurchased && record.purchased_by_name && (
+        <div className="profile-section">
+          <h2>{t.records.purchaseInfo}</h2>
+          <div className="purchase-info-section">
+            <div className="profile-field">
+              <span className="profile-field-label">{t.records.purchasedBy}</span>
+              <span className="profile-field-value">{record.purchased_by_name}</span>
+            </div>
+            <div className="profile-field">
+              <span className="profile-field-label">{t.records.purchaseDate}</span>
+              <span className="profile-field-value">{formatDate(record.purchased_at)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit button for drafts */}
       {isDraft && (

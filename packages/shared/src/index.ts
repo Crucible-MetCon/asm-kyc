@@ -35,6 +35,11 @@ export {
 } from './schemas/record.js';
 
 export {
+  PurchaseCreateSchema,
+  type PurchaseCreate,
+} from './schemas/purchase.js';
+
+export {
   type ApiError,
   type MeResponse,
   type UserProfile,
@@ -43,6 +48,12 @@ export {
   type RecordPhotoResponse,
   type RecordListItem,
   type RecordListResponse,
+  type AvailableRecordListItem,
+  type AvailableRecordListResponse,
+  type PurchaseResponse,
+  type PurchaseListItem,
+  type PurchaseListResponse,
+  type PurchaseItemResponse,
 } from './types/api.js';
 
 export {

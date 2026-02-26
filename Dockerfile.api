@@ -14,6 +14,7 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc tsconfig.base.json .
 # Copy all package.json files for dependency resolution
 COPY apps/api/package.json apps/api/package.json
 COPY apps/miner-pwa/package.json apps/miner-pwa/package.json
+COPY apps/admin-web/package.json apps/admin-web/package.json
 COPY packages/database/package.json packages/database/package.json
 COPY packages/shared/package.json packages/shared/package.json
 
@@ -25,6 +26,7 @@ COPY packages/shared/ packages/shared/
 COPY packages/database/ packages/database/
 COPY apps/api/ apps/api/
 COPY apps/miner-pwa/ apps/miner-pwa/
+COPY apps/admin-web/ apps/admin-web/
 
 # Generate Prisma client
 RUN pnpm --filter @asm-kyc/database db:generate
@@ -32,6 +34,10 @@ RUN pnpm --filter @asm-kyc/database db:generate
 # Build the PWA and copy to where the API can serve it
 RUN pnpm --filter @asm-kyc/miner-pwa build
 RUN cp -r apps/miner-pwa/dist apps/api/miner-pwa-dist
+
+# Build admin-web and copy to where the API can serve it
+RUN pnpm --filter @asm-kyc/admin-web build
+RUN cp -r apps/admin-web/dist apps/api/admin-web-dist
 
 EXPOSE 3001
 

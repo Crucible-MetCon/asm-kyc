@@ -321,6 +321,49 @@ Ndasumina ukuti nabelenga no kumfwikisha ifyo fyalembwa, kabili ndasumina pa kut
     });
   }
 
+  // Phase 5: Sample compliance reviews
+  const adminUser = await prisma.user.findUnique({ where: { username: 'admin' } });
+  if (adminUser) {
+    await prisma.complianceReview.upsert({
+      where: { id: '00000000-0000-0000-0000-000000000020' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0000-000000000020',
+        record_id: '00000000-0000-0000-0000-000000000001',
+        reviewer_id: adminUser.id,
+        status: 'APPROVED',
+        notes: 'Record verified. Origin mine site confirmed, weight and purity within expected range.',
+      },
+    });
+
+    await prisma.complianceReview.upsert({
+      where: { id: '00000000-0000-0000-0000-000000000021' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0000-000000000021',
+        record_id: '00000000-0000-0000-0000-000000000005',
+        reviewer_id: adminUser.id,
+        status: 'FLAGGED',
+        notes: 'High weight lot (300g) from single site. Additional verification of source documentation needed.',
+      },
+    });
+
+    // Sample audit log
+    await prisma.auditLog.upsert({
+      where: { id: '00000000-0000-0000-0000-000000000030' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0000-000000000030',
+        user_id: adminUser.id,
+        action: 'COMPLIANCE_REVIEW_CREATED',
+        entity: 'ComplianceReview',
+        entity_id: '00000000-0000-0000-0000-000000000020',
+        meta: { status: 'APPROVED', record_id: '00000000-0000-0000-0000-000000000001' },
+      },
+    });
+    console.log('  2 sample compliance reviews + 1 audit log');
+  }
+
   console.log('Seed complete:');
   console.log('  admin   / admin123   (ADMIN_USER)');
   console.log('  miner1  / miner123   (MINER_USER)');

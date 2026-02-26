@@ -20,3 +20,6 @@ export type GoldType = (typeof GOLD_TYPES)[number];
 
 export const RECORD_STATUSES = ['DRAFT', 'SUBMITTED', 'PURCHASED'] as const;
 export type RecordStatus = (typeof RECORD_STATUSES)[number];
+
+export const COMPLIANCE_REVIEW_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'FLAGGED'] as const;
+export type ComplianceReviewStatus = (typeof COMPLIANCE_REVIEW_STATUSES)[number];

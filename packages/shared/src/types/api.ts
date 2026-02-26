@@ -156,3 +156,113 @@ export interface AvailablePartnerListResponse {
   partners: AvailablePartnerListItem[];
   total: number;
 }
+
+// Phase 5: Admin dashboard types
+
+export interface AdminDashboardStats {
+  total_users: number;
+  total_miners: number;
+  total_traders: number;
+  total_refiners: number;
+  total_records: number;
+  records_by_status: { status: string; count: number }[];
+  total_purchases: number;
+  total_compliance_reviews: number;
+  pending_reviews: number;
+}
+
+export interface AdminUserListItem {
+  id: string;
+  username: string;
+  role: string;
+  phone_e164: string;
+  is_disabled: boolean;
+  profile_name: string | null;
+  profile_completed: boolean;
+  consented: boolean;
+  created_at: string;
+}
+
+export interface AdminUserListResponse {
+  users: AdminUserListItem[];
+  total: number;
+}
+
+export interface AdminUserDetail {
+  id: string;
+  username: string;
+  role: string;
+  phone_e164: string;
+  is_disabled: boolean;
+  created_at: string;
+  updated_at: string;
+  profile: UserProfile | null;
+  record_count: number;
+  purchase_count: number;
+}
+
+export interface AdminRecordListItem {
+  id: string;
+  status: string;
+  weight_grams: number | null;
+  estimated_purity: number | null;
+  gold_type: string | null;
+  origin_mine_site: string | null;
+  extraction_date: string | null;
+  miner_name: string;
+  miner_username: string;
+  photo_count: number;
+  review_status: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminRecordListResponse {
+  records: AdminRecordListItem[];
+  total: number;
+}
+
+export interface ComplianceReviewResponse {
+  id: string;
+  status: string;
+  notes: string | null;
+  reviewer_name: string;
+  reviewed_at: string;
+}
+
+export interface AdminRecordDetail {
+  id: string;
+  status: string;
+  weight_grams: number | null;
+  estimated_purity: number | null;
+  gold_type: string | null;
+  origin_mine_site: string | null;
+  extraction_date: string | null;
+  notes: string | null;
+  miner_name: string;
+  miner_username: string;
+  purchased_by_name: string | null;
+  purchased_at: string | null;
+  created_at: string;
+  updated_at: string;
+  photos: RecordPhotoResponse[];
+  compliance_reviews: ComplianceReviewResponse[];
+}
+
+export interface ComplianceReviewListItem {
+  id: string;
+  status: string;
+  notes: string | null;
+  reviewer_name: string;
+  reviewed_at: string;
+  record_id: string;
+  record_weight: number | null;
+  record_gold_type: string | null;
+  record_mine_site: string | null;
+  miner_name: string;
+}
+
+export interface ComplianceReviewListResponse {
+  reviews: ComplianceReviewListItem[];
+  total: number;
+}

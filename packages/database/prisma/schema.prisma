@@ -36,6 +36,7 @@ model User {
   username      String   @unique @db.VarChar(50)
   phone_e164    String   @unique @db.VarChar(20)
   password_hash String?  @db.Text
+  is_disabled   Boolean  @default(false)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
@@ -46,6 +47,7 @@ model User {
   records             Record[]
   purchases           Purchase[]
   audit_logs          AuditLog[]
+  compliance_reviews  ComplianceReview[] @relation("ComplianceReviewer")
   sales_partners_as_miner   SalesPartner[] @relation("MinerPartners")
   sales_partners_as_partner SalesPartner[] @relation("PartnerMiners")
 
@@ -232,7 +234,7 @@ model RecordSourceEntry {
   @@map("record_source_entries")
 }
 
-// Expanded in Phase 5
+// Phase 5: compliance review of gold records
 model ComplianceReview {
   id          String   @id @default(uuid()) @db.Uuid
   record_id   String   @db.Uuid
@@ -241,8 +243,11 @@ model ComplianceReview {
   notes       String?  @db.Text
   reviewed_at DateTime @default(now())
 
-  record Record @relation(fields: [record_id], references: [id], onDelete: Cascade)
+  record   Record @relation(fields: [record_id], references: [id], onDelete: Cascade)
+  reviewer User   @relation("ComplianceReviewer", fields: [reviewer_id], references: [id])
 
+  @@index([record_id])
+  @@index([reviewer_id])
   @@map("compliance_reviews")
 }
 

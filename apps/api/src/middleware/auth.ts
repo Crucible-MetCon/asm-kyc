@@ -29,5 +29,14 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
     });
   }
 
+  if (session.user.is_disabled) {
+    reply.clearCookie('session_id', { path: '/' });
+    return reply.status(403).send({
+      statusCode: 403,
+      error: 'Forbidden',
+      message: 'Account disabled',
+    });
+  }
+
   request.user = session.user;
 }

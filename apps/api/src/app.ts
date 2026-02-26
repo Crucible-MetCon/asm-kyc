@@ -12,6 +12,7 @@ import { profileRoutes } from './routes/profile.js';
 import { recordRoutes } from './routes/records.js';
 import { purchaseRoutes } from './routes/purchases.js';
 import { salesPartnerRoutes } from './routes/sales-partners.js';
+import { adminRoutes } from './routes/admin/index.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 });
@@ -44,13 +45,15 @@ export async function buildApp() {
       await api.register(recordRoutes, { prefix: '/records' });
       await api.register(purchaseRoutes, { prefix: '/purchases' });
       await api.register(salesPartnerRoutes, { prefix: '/sales-partners' });
+      await api.register(adminRoutes, { prefix: '/admin' });
     },
     { prefix: '/api' },
   );
 
-  // Serve PWA static files in production
-  // __dirname = apps/api/src  →  ../miner-pwa-dist = apps/api/miner-pwa-dist (Docker)
+  // Serve static files in production
   const __dirname = resolve(fileURLToPath(import.meta.url), '..');
+
+  // Miner PWA static files
   const pwaDistPath = resolve(__dirname, '../miner-pwa-dist');
   const pwaDistPathAlt = resolve(__dirname, '../../../apps/miner-pwa/dist');
   const staticRoot = existsSync(pwaDistPath)
@@ -59,27 +62,66 @@ export async function buildApp() {
     ? pwaDistPathAlt
     : null;
 
+  // Admin web static files
+  const adminDistPath = resolve(__dirname, '../admin-web-dist');
+  const adminDistPathAlt = resolve(__dirname, '../../../apps/admin-web/dist');
+  const adminRoot = existsSync(adminDistPath)
+    ? adminDistPath
+    : existsSync(adminDistPathAlt)
+    ? adminDistPathAlt
+    : null;
+
   if (staticRoot) {
     app.log.info(`Serving PWA from: ${staticRoot}`);
-
     await app.register(fastifyStatic, {
       root: staticRoot,
       prefix: '/',
       wildcard: false,
     });
+  }
 
-    // SPA fallback: serve index.html for any non-API, non-file route
-    app.setNotFoundHandler(async (request, reply) => {
-      if (request.url.startsWith('/api/')) {
-        return reply.status(404).send({
-          statusCode: 404,
-          error: 'Not Found',
-          message: 'Route not found',
-        });
-      }
-      return reply.sendFile('index.html');
+  if (adminRoot) {
+    app.log.info(`Serving admin-web from: ${adminRoot}`);
+    await app.register(fastifyStatic, {
+      root: adminRoot,
+      prefix: '/admin/',
+      decorateReply: false,
     });
   }
+
+  // SPA fallback: serve index.html for non-API routes
+  app.setNotFoundHandler(async (request, reply) => {
+    if (request.url.startsWith('/api/')) {
+      return reply.status(404).send({
+        statusCode: 404,
+        error: 'Not Found',
+        message: 'Route not found',
+      });
+    }
+
+    // Admin SPA fallback
+    if (request.url.startsWith('/admin')) {
+      if (adminRoot) {
+        return reply.sendFile('index.html', adminRoot);
+      }
+      return reply.status(404).send({
+        statusCode: 404,
+        error: 'Not Found',
+        message: 'Admin app not available',
+      });
+    }
+
+    // Miner PWA SPA fallback
+    if (staticRoot) {
+      return reply.sendFile('index.html');
+    }
+
+    return reply.status(404).send({
+      statusCode: 404,
+      error: 'Not Found',
+      message: 'Not found',
+    });
+  });
 
   return app;
 }

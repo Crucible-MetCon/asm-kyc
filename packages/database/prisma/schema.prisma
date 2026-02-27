@@ -50,6 +50,9 @@ model User {
   compliance_reviews  ComplianceReview[] @relation("ComplianceReviewer")
   sales_partners_as_miner   SalesPartner[] @relation("MinerPartners")
   sales_partners_as_partner SalesPartner[] @relation("PartnerMiners")
+  mine_sites          MineSite[]
+  record_receipts     RecordReceipt[]
+  intended_records    Record[] @relation("IntendedBuyer")
 
   @@map("users")
 }
@@ -149,6 +152,7 @@ model Document {
 // Phase 3: gold record with structured fields
 model Record {
   id               String    @id @default(uuid()) @db.Uuid
+  record_number    String?   @unique @db.VarChar(20)
   created_by       String    @db.Uuid
   status           String    @default("DRAFT") @db.VarChar(30)
 
@@ -159,6 +163,18 @@ model Record {
   gold_type        GoldType?
   notes            String?   @db.Text
 
+  // Phase 6: vision capture fields
+  scale_photo_data String?   @db.Text
+  scale_photo_mime String?   @db.VarChar(50)
+  xrf_photo_data   String?   @db.Text
+  xrf_photo_mime   String?   @db.VarChar(50)
+  gps_latitude     Decimal?  @db.Decimal(10, 7)
+  gps_longitude    Decimal?  @db.Decimal(10, 7)
+  country          String?   @db.VarChar(100)
+  locality         String?   @db.VarChar(500)
+  mine_site_id     String?   @db.Uuid
+  buyer_id         String?   @db.Uuid
+
   // Phase 4: purchase tracking
   purchased_by     String?   @db.Uuid
   purchased_at     DateTime?
@@ -167,13 +183,18 @@ model Record {
   updated_at       DateTime  @updatedAt
 
   creator            User              @relation(fields: [created_by], references: [id])
+  mine_site          MineSite?         @relation(fields: [mine_site_id], references: [id])
+  intended_buyer     User?             @relation("IntendedBuyer", fields: [buyer_id], references: [id])
   photos             RecordPhoto[]
   purchase_items     PurchaseItem[]
   source_entries     RecordSourceEntry[]
   compliance_reviews ComplianceReview[]
+  metal_purities     MetalPurity[]
+  receipts           RecordReceipt[]
 
   @@index([created_by])
   @@index([status])
+  @@index([mine_site_id])
   @@map("records")
 }
 
@@ -193,26 +214,37 @@ model RecordPhoto {
 
 // Phase 4: trader purchases (chain of custody)
 model Purchase {
-  id           String   @id @default(uuid()) @db.Uuid
-  trader_id    String   @db.Uuid
-  total_weight Decimal  @db.Decimal(10, 3)
-  total_items  Int
-  notes        String?  @db.Text
-  purchased_at DateTime @default(now())
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id             String   @id @default(uuid()) @db.Uuid
+  trader_id      String   @db.Uuid
+  total_weight   Decimal  @db.Decimal(10, 3)
+  total_items    Int
+  notes          String?  @db.Text
+  purchased_at   DateTime @default(now())
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 
-  trader User           @relation(fields: [trader_id], references: [id])
-  items  PurchaseItem[]
+  // Phase 6: Yellow Card payment fields (nullable — no impact on existing data)
+  price_per_gram  Decimal? @db.Decimal(10, 2)
+  total_price     Decimal? @db.Decimal(15, 2)
+  currency        String?  @default("ZMW") @db.VarChar(3)
+  payment_status  String?  @default("NONE") @db.VarChar(30)
+
+  trader   User           @relation(fields: [trader_id], references: [id])
+  items    PurchaseItem[]
+  payments Payment[]
 
   @@index([trader_id])
   @@map("purchases")
 }
 
 model PurchaseItem {
-  id          String @id @default(uuid()) @db.Uuid
-  purchase_id String @db.Uuid
-  record_id   String @db.Uuid
+  id             String   @id @default(uuid()) @db.Uuid
+  purchase_id    String   @db.Uuid
+  record_id      String   @db.Uuid
+
+  // Phase 6: per-item pricing (nullable)
+  price_per_gram Decimal? @db.Decimal(10, 2)
+  line_total     Decimal? @db.Decimal(15, 2)
 
   purchase Purchase @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
   record   Record   @relation(fields: [record_id], references: [id])
@@ -220,6 +252,32 @@ model PurchaseItem {
   @@unique([purchase_id, record_id])
   @@index([record_id])
   @@map("purchase_items")
+}
+
+// Phase 6: Yellow Card payment tracking
+model Payment {
+  id                  String    @id @default(uuid()) @db.Uuid
+  purchase_id         String    @db.Uuid
+  yellowcard_txn_id   String?   @db.VarChar(200)
+  type                String    @db.VarChar(30)  // COLLECTION or DISBURSEMENT
+  amount              Decimal   @db.Decimal(15, 2)
+  currency            String    @default("ZMW") @db.VarChar(3)
+  status              String    @default("CREATED") @db.VarChar(30)
+  payment_method      String?   @db.VarChar(50)  // BANK_TRANSFER, MOBILE_MONEY
+  fee_amount          Decimal?  @db.Decimal(10, 2)
+  fee_currency        String?   @db.VarChar(3)
+  recipient_id        String?   @db.Uuid  // for disbursements to miners
+  yellowcard_meta     Json?
+  webhook_received_at DateTime?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+
+  purchase Purchase @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+
+  @@index([purchase_id])
+  @@index([yellowcard_txn_id])
+  @@index([status])
+  @@map("payments")
 }
 
 // Expanded in Phase 4
@@ -265,4 +323,74 @@ model AuditLog {
 
   @@index([entity, entity_id])
   @@map("audit_logs")
+}
+
+// ─── Phase 6: Mine Sites, Metal Purities, Receipts ──────
+
+model MineSite {
+  id                    String   @id @default(uuid()) @db.Uuid
+  miner_id              String   @db.Uuid
+  name                  String   @db.VarChar(500)
+  gps_latitude          Decimal? @db.Decimal(10, 7)
+  gps_longitude         Decimal? @db.Decimal(10, 7)
+  mining_license_number String?  @db.VarChar(200)
+  is_default            Boolean  @default(false)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  miner   User     @relation(fields: [miner_id], references: [id])
+  records Record[]
+
+  @@index([miner_id])
+  @@map("mine_sites")
+}
+
+model MetalPurity {
+  id         String   @id @default(uuid()) @db.Uuid
+  record_id  String   @db.Uuid
+  receipt_id String?  @db.Uuid
+  element    String   @db.VarChar(5)
+  purity     Decimal  @db.Decimal(7, 4)
+  sort_order Int      @default(0)
+
+  record  Record         @relation(fields: [record_id], references: [id], onDelete: Cascade)
+  receipt RecordReceipt? @relation(fields: [receipt_id], references: [id], onDelete: Cascade)
+
+  @@index([record_id])
+  @@index([receipt_id])
+  @@map("metal_purities")
+}
+
+model RecordReceipt {
+  id               String   @id @default(uuid()) @db.Uuid
+  record_id        String   @db.Uuid
+  received_by      String   @db.Uuid
+  receipt_weight   Decimal? @db.Decimal(10, 3)
+  scale_photo_data String?  @db.Text
+  scale_photo_mime String?  @db.VarChar(50)
+  xrf_photo_data   String?  @db.Text
+  xrf_photo_mime   String?  @db.VarChar(50)
+  gps_latitude     Decimal? @db.Decimal(10, 7)
+  gps_longitude    Decimal? @db.Decimal(10, 7)
+  country          String?  @db.VarChar(100)
+  locality         String?  @db.VarChar(500)
+  received_at      DateTime @default(now())
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  record   Record        @relation(fields: [record_id], references: [id], onDelete: Cascade)
+  receiver User          @relation(fields: [received_by], references: [id])
+  purities MetalPurity[]
+
+  @@index([record_id])
+  @@index([received_by])
+  @@map("record_receipts")
+}
+
+// Phase 6: record number sequence counter
+model RecordCounter {
+  id    String @id @default("singleton") @db.VarChar(20)
+  value Int    @default(0)
+
+  @@map("record_counters")
 }

@@ -77,7 +77,7 @@ export function RecordDetailScreen({ recordId, onBack }: RecordDetailScreenProps
         <div className="detail-grid">
           <div className="detail-field">
             <label>Record ID</label>
-            <div className="value value-mono">{record.id.slice(0, 8)}...</div>
+            <div className="value value-mono">{record.record_number || record.id.slice(0, 8) + '...'}</div>
           </div>
           <div className="detail-field">
             <label>Miner</label>
@@ -147,6 +147,110 @@ export function RecordDetailScreen({ recordId, onBack }: RecordDetailScreenProps
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Phase 6: Enhanced Fields */}
+      {(record.mine_site_name || record.country || record.metal_purities?.length > 0 || record.has_scale_photo || record.has_xrf_photo) && (
+        <div className="card">
+          <h2 className="card-title">Enhanced Record Data</h2>
+          <div className="detail-grid">
+            {record.mine_site_name && (
+              <div className="detail-field">
+                <label>Mine Site</label>
+                <div className="value">{record.mine_site_name}</div>
+              </div>
+            )}
+            {record.country && (
+              <div className="detail-field">
+                <label>Location</label>
+                <div className="value">{record.locality ? `${record.locality}, ${record.country}` : record.country}</div>
+              </div>
+            )}
+            {record.gps_latitude != null && record.gps_longitude != null && (
+              <div className="detail-field">
+                <label>GPS Coordinates</label>
+                <div className="value value-mono">{Number(record.gps_latitude).toFixed(6)}, {Number(record.gps_longitude).toFixed(6)}</div>
+              </div>
+            )}
+            <div className="detail-field">
+              <label>Scale Photo</label>
+              <div className="value">{record.has_scale_photo ? '✅ Captured' : '—'}</div>
+            </div>
+            <div className="detail-field">
+              <label>XRF Photo</label>
+              <div className="value">{record.has_xrf_photo ? '✅ Captured' : '—'}</div>
+            </div>
+          </div>
+          {record.metal_purities && record.metal_purities.length > 0 && (
+            <div style={{ marginTop: '16px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>Metal Purities</h3>
+              <table style={{ width: '100%', fontSize: '14px', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <th style={{ textAlign: 'left', padding: '4px 8px' }}>Element</th>
+                    <th style={{ textAlign: 'right', padding: '4px 8px' }}>Purity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {record.metal_purities.map((p) => (
+                    <tr key={p.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '4px 8px', fontWeight: p.element === 'Au' ? 700 : 400, color: p.element === 'Au' ? '#b45309' : undefined }}>{p.element}</td>
+                      <td style={{ padding: '4px 8px', textAlign: 'right' }}>{p.purity.toFixed(2)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Receipts */}
+      {record.receipts && record.receipts.length > 0 && (
+        <div className="card">
+          <h2 className="card-title">Trader/Refiner Receipts ({record.receipts.length})</h2>
+          {record.receipts.map((receipt) => (
+            <div key={receipt.id} style={{ padding: '12px', background: '#f9fafb', borderRadius: '8px', marginBottom: '8px' }}>
+              <div className="detail-grid">
+                <div className="detail-field">
+                  <label>Received By</label>
+                  <div className="value">{receipt.receiver_name}</div>
+                </div>
+                {receipt.receipt_weight != null && (
+                  <div className="detail-field">
+                    <label>Receipt Weight</label>
+                    <div className="value">
+                      {receipt.receipt_weight}g
+                      {record.weight_grams != null && Math.abs(receipt.receipt_weight - record.weight_grams) / record.weight_grams > 0.05 && (
+                        <span style={{ color: '#dc2626', fontWeight: 600, marginLeft: '8px' }}>⚠️ Discrepancy</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {receipt.country && (
+                  <div className="detail-field">
+                    <label>Location</label>
+                    <div className="value">{receipt.locality ? `${receipt.locality}, ${receipt.country}` : receipt.country}</div>
+                  </div>
+                )}
+                <div className="detail-field">
+                  <label>Received At</label>
+                  <div className="value">{new Date(receipt.received_at).toLocaleString()}</div>
+                </div>
+              </div>
+              {receipt.purities.length > 0 && (
+                <div style={{ marginTop: '8px' }}>
+                  <strong style={{ fontSize: '13px' }}>Receipt Purities:</strong>
+                  {receipt.purities.map((p) => (
+                    <span key={p.id} style={{ marginLeft: '8px', fontSize: '13px' }}>
+                      {p.element}: {p.purity.toFixed(2)}%
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

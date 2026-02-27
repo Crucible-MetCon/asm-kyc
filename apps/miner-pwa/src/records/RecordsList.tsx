@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { apiFetch } from '../api/client';
+import { apiFetch, NetworkError } from '../api/client';
 import { useI18n, interpolate } from '../i18n/I18nContext';
+import { setListCache, getListCache, getAllDrafts, type DraftRecord } from '../offline/db';
 import type { RecordListResponse, RecordListItem } from '@asm-kyc/shared';
 import rawGoldIcon from '../assets/gold-types/raw-gold.png';
 import barIcon from '../assets/gold-types/bar.png';
@@ -20,13 +21,32 @@ interface Props {
 export function RecordsList({ onCreateNew, onViewRecord }: Props) {
   const { t } = useI18n();
   const [records, setRecords] = useState<RecordListItem[]>([]);
+  const [drafts, setDrafts] = useState<DraftRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiFetch<RecordListResponse>('/records')
-      .then((data) => setRecords(data.records))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    const loadData = async () => {
+      // Load local drafts (pending sync)
+      try {
+        const localDrafts = await getAllDrafts();
+        setDrafts(localDrafts.filter((d) => d.syncStatus !== 'synced'));
+      } catch { /* ignore */ }
+
+      // Load server records
+      try {
+        const data = await apiFetch<RecordListResponse>('/records');
+        setRecords(data.records);
+        await setListCache('records-list', data.records);
+      } catch (err) {
+        if (err instanceof NetworkError) {
+          const cached = await getListCache<RecordListItem[]>('records-list');
+          if (cached) setRecords(cached);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
   const goldTypeLabel = (val: string | null) => {
@@ -67,6 +87,33 @@ export function RecordsList({ onCreateNew, onViewRecord }: Props) {
         </div>
       ) : (
         <div className="card-grid">
+          {/* Offline drafts pending sync */}
+          {drafts.map((draft) => (
+            <div
+              key={draft.id}
+              className="record-card"
+              style={{ opacity: 0.85 }}
+            >
+              <img
+                src={GOLD_TYPE_ICONS[draft.data.gold_type || 'RAW_GOLD'] || rawGoldIcon}
+                alt={goldTypeLabel(draft.data.gold_type)}
+                className="record-card-icon"
+              />
+              <div className="record-card-body">
+                <div className="record-card-title">
+                  {goldTypeLabel(draft.data.gold_type) || t.records.createTitle}
+                  {draft.data.weight_grams != null && ` — ${draft.data.weight_grams}g`}
+                </div>
+                <div className="record-card-meta">
+                  {draft.data.origin_mine_site || '—'} · {formatDate(draft.createdAt)}
+                </div>
+              </div>
+              <span className="status-badge status-pending-sync">
+                {t.sync.pendingSync}
+              </span>
+            </div>
+          ))}
+          {/* Server records */}
           {records.map((rec) => (
             <div
               key={rec.id}

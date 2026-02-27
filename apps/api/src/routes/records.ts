@@ -15,6 +15,36 @@ import {
   serializeAvailableRecord,
 } from '../lib/serialize.js';
 
+// Include relations needed for full record serialization
+const RECORD_FULL_INCLUDE = {
+  photos: true,
+  mine_site: true,
+  intended_buyer: { include: { miner_profile: true } },
+  metal_purities: { orderBy: { sort_order: 'asc' as const } },
+  receipts: {
+    include: {
+      receiver: { include: { miner_profile: true } },
+      purities: { orderBy: { sort_order: 'asc' as const } },
+    },
+    orderBy: { created_at: 'desc' as const },
+  },
+};
+
+/**
+ * Generate the next record number in format GT-YYYY-NNNNN.
+ * Uses a counter table for atomicity.
+ */
+async function generateRecordNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const counter = await prisma.recordCounter.upsert({
+    where: { id: 'singleton' },
+    create: { id: 'singleton', value: 1 },
+    update: { value: { increment: 1 } },
+  });
+  const padded = String(counter.value).padStart(5, '0');
+  return `GT-${year}-${padded}`;
+}
+
 export const recordRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', authenticate);
 
@@ -33,10 +63,15 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
 
       const user = request.user!;
       const data = parsed.data;
+      const body = request.body as Record<string, unknown>;
+
+      // Generate record number
+      const recordNumber = await generateRecordNumber();
 
       const record = await prisma.record.create({
         data: {
           created_by: user.id,
+          record_number: recordNumber,
           status: 'DRAFT',
           weight_grams: data.weight_grams,
           estimated_purity: data.estimated_purity,
@@ -44,9 +79,40 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
           extraction_date: data.extraction_date ? new Date(data.extraction_date) : null,
           gold_type: data.gold_type ?? null,
           notes: data.notes || null,
+          // Phase 6: enhanced fields
+          scale_photo_data: typeof body.scale_photo_data === 'string' ? body.scale_photo_data : null,
+          scale_photo_mime: typeof body.scale_photo_mime === 'string' ? body.scale_photo_mime : null,
+          xrf_photo_data: typeof body.xrf_photo_data === 'string' ? body.xrf_photo_data : null,
+          xrf_photo_mime: typeof body.xrf_photo_mime === 'string' ? body.xrf_photo_mime : null,
+          gps_latitude: typeof body.gps_latitude === 'number' ? body.gps_latitude : null,
+          gps_longitude: typeof body.gps_longitude === 'number' ? body.gps_longitude : null,
+          country: typeof body.country === 'string' ? body.country : null,
+          locality: typeof body.locality === 'string' ? body.locality : null,
+          mine_site_id: typeof body.mine_site_id === 'string' ? body.mine_site_id : null,
+          buyer_id: typeof body.buyer_id === 'string' ? body.buyer_id : null,
         },
-        include: { photos: true },
+        include: RECORD_FULL_INCLUDE,
       });
+
+      // Create metal purities if provided
+      if (Array.isArray(body.metal_purities) && body.metal_purities.length > 0) {
+        const purities = (body.metal_purities as Array<{ element: string; purity: number }>).slice(0, 5);
+        await prisma.metalPurity.createMany({
+          data: purities.map((p, i) => ({
+            record_id: record.id,
+            element: String(p.element).substring(0, 5),
+            purity: Math.min(100, Math.max(0, Number(p.purity))),
+            sort_order: i,
+          })),
+        });
+
+        // Re-fetch with purities
+        const full = await prisma.record.findUnique({
+          where: { id: record.id },
+          include: RECORD_FULL_INCLUDE,
+        });
+        return reply.status(201).send(serializeRecord(full!));
+      }
 
       return reply.status(201).send(serializeRecord(record));
     },
@@ -119,14 +185,14 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
     const user = request.user!;
     const record = await prisma.record.findUnique({
       where: { id: request.params.id },
-      include: { photos: true },
+      include: RECORD_FULL_INCLUDE,
     });
 
     if (!record) {
       return reply.status(404).send({ statusCode: 404, error: 'Not Found', message: 'Record not found' });
     }
-    // Allow access: record owner OR trader who purchased it
-    if (record.created_by !== user.id && record.purchased_by !== user.id) {
+    // Allow access: record owner OR trader who purchased it OR intended buyer
+    if (record.created_by !== user.id && record.purchased_by !== user.id && record.buyer_id !== user.id) {
       return reply.status(403).send({ statusCode: 403, error: 'Forbidden', message: 'Not your record' });
     }
 
@@ -167,6 +233,8 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const data = parsed.data;
+    const body = request.body as Record<string, unknown>;
+
     const record = await prisma.record.update({
       where: { id: request.params.id },
       data: {
@@ -176,9 +244,46 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
         extraction_date: data.extraction_date ? new Date(data.extraction_date) : null,
         gold_type: data.gold_type ?? null,
         notes: data.notes || null,
+        // Phase 6: enhanced fields (only update if provided)
+        ...(body.scale_photo_data !== undefined && { scale_photo_data: body.scale_photo_data as string | null }),
+        ...(body.scale_photo_mime !== undefined && { scale_photo_mime: body.scale_photo_mime as string | null }),
+        ...(body.xrf_photo_data !== undefined && { xrf_photo_data: body.xrf_photo_data as string | null }),
+        ...(body.xrf_photo_mime !== undefined && { xrf_photo_mime: body.xrf_photo_mime as string | null }),
+        ...(body.gps_latitude !== undefined && { gps_latitude: body.gps_latitude as number | null }),
+        ...(body.gps_longitude !== undefined && { gps_longitude: body.gps_longitude as number | null }),
+        ...(body.country !== undefined && { country: body.country as string | null }),
+        ...(body.locality !== undefined && { locality: body.locality as string | null }),
+        ...(body.mine_site_id !== undefined && { mine_site_id: body.mine_site_id as string | null }),
+        ...(body.buyer_id !== undefined && { buyer_id: body.buyer_id as string | null }),
       },
-      include: { photos: true },
+      include: RECORD_FULL_INCLUDE,
     });
+
+    // Update metal purities if provided
+    if (Array.isArray(body.metal_purities)) {
+      // Delete existing and recreate
+      await prisma.metalPurity.deleteMany({
+        where: { record_id: record.id, receipt_id: null },
+      });
+      const purities = (body.metal_purities as Array<{ element: string; purity: number }>).slice(0, 5);
+      if (purities.length > 0) {
+        await prisma.metalPurity.createMany({
+          data: purities.map((p, i) => ({
+            record_id: record.id,
+            element: String(p.element).substring(0, 5),
+            purity: Math.min(100, Math.max(0, Number(p.purity))),
+            sort_order: i,
+          })),
+        });
+      }
+
+      // Re-fetch
+      const full = await prisma.record.findUnique({
+        where: { id: record.id },
+        include: RECORD_FULL_INCLUDE,
+      });
+      return reply.send(serializeRecord(full!));
+    }
 
     return reply.send(serializeRecord(record));
   });
@@ -219,7 +324,7 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
     const record = await prisma.record.update({
       where: { id: request.params.id },
       data: { status: 'SUBMITTED' },
-      include: { photos: true },
+      include: RECORD_FULL_INCLUDE,
     });
 
     return reply.send(serializeRecord(record));

@@ -5,6 +5,9 @@ import type {
   User,
   Purchase,
   PurchaseItem,
+  MineSite,
+  MetalPurity,
+  RecordReceipt,
 } from '@asm-kyc/database';
 import type {
   UserProfile,
@@ -15,6 +18,9 @@ import type {
   PurchaseListItem,
   PurchaseItemResponse,
   AvailableRecordListItem,
+  MetalPurityResponse,
+  RecordReceiptResponse,
+  MineSiteResponse,
 } from '@asm-kyc/shared';
 
 export function serializeProfile(p: MinerProfile | null): UserProfile | null {
@@ -44,12 +50,63 @@ export function serializeRecordPhoto(p: RecordPhoto): RecordPhotoResponse {
   };
 }
 
-export function serializeRecord(
-  r: PrismaRecord & {
-    photos: RecordPhoto[];
-    purchased_by_user?: (User & { miner_profile: MinerProfile | null }) | null;
+export function serializeMineSite(s: MineSite): MineSiteResponse {
+  return {
+    id: s.id,
+    name: s.name,
+    gps_latitude: s.gps_latitude ? Number(s.gps_latitude) : null,
+    gps_longitude: s.gps_longitude ? Number(s.gps_longitude) : null,
+    mining_license_number: s.mining_license_number,
+    is_default: s.is_default,
+    created_at: s.created_at.toISOString(),
+  };
+}
+
+export function serializeMetalPurity(p: MetalPurity): MetalPurityResponse {
+  return {
+    id: p.id,
+    element: p.element,
+    purity: Number(p.purity),
+    sort_order: p.sort_order,
+  };
+}
+
+export function serializeReceipt(
+  r: RecordReceipt & {
+    receiver: User & { miner_profile: MinerProfile | null };
+    purities: MetalPurity[];
   },
-): RecordResponse {
+): RecordReceiptResponse {
+  return {
+    id: r.id,
+    record_id: r.record_id,
+    received_by: r.received_by,
+    receiver_name: r.receiver.miner_profile?.full_name ?? r.receiver.username,
+    receipt_weight: r.receipt_weight ? Number(r.receipt_weight) : null,
+    has_scale_photo: !!r.scale_photo_data,
+    has_xrf_photo: !!r.xrf_photo_data,
+    gps_latitude: r.gps_latitude ? Number(r.gps_latitude) : null,
+    gps_longitude: r.gps_longitude ? Number(r.gps_longitude) : null,
+    country: r.country,
+    locality: r.locality,
+    purities: r.purities.map(serializeMetalPurity),
+    received_at: r.received_at.toISOString(),
+  };
+}
+
+type RecordWithRelations = PrismaRecord & {
+  photos: RecordPhoto[];
+  purchased_by_user?: (User & { miner_profile: MinerProfile | null }) | null;
+  mine_site?: MineSite | null;
+  intended_buyer?: (User & { miner_profile: MinerProfile | null }) | null;
+  metal_purities?: MetalPurity[];
+  receipts?: Array<RecordReceipt & {
+    receiver: User & { miner_profile: MinerProfile | null };
+    purities: MetalPurity[];
+  }>;
+};
+
+export function serializeRecord(r: RecordWithRelations): RecordResponse {
   return {
     id: r.id,
     status: r.status,
@@ -65,6 +122,19 @@ export function serializeRecord(
     created_at: r.created_at.toISOString(),
     updated_at: r.updated_at.toISOString(),
     photos: r.photos.map(serializeRecordPhoto),
+    // Phase 6: enhanced fields
+    record_number: r.record_number ?? null,
+    mine_site: r.mine_site ? serializeMineSite(r.mine_site) : null,
+    intended_buyer_name: r.intended_buyer?.miner_profile?.full_name
+      ?? r.intended_buyer?.username ?? null,
+    gps_latitude: r.gps_latitude ? Number(r.gps_latitude) : null,
+    gps_longitude: r.gps_longitude ? Number(r.gps_longitude) : null,
+    country: r.country ?? null,
+    locality: r.locality ?? null,
+    has_scale_photo: !!r.scale_photo_data,
+    has_xrf_photo: !!r.xrf_photo_data,
+    metal_purities: (r.metal_purities ?? []).map(serializeMetalPurity),
+    receipts: (r.receipts ?? []).map(serializeReceipt),
   };
 }
 
@@ -73,6 +143,7 @@ export function serializeRecordListItem(
 ): RecordListItem {
   return {
     id: r.id,
+    record_number: r.record_number ?? null,
     status: r.status,
     weight_grams: r.weight_grams ? Number(r.weight_grams) : null,
     gold_type: r.gold_type,
@@ -114,6 +185,7 @@ export function serializePurchaseListItem(
     notes: p.notes,
     purchased_at: p.purchased_at.toISOString(),
     created_at: p.created_at.toISOString(),
+    payment_status: p.payment_status ?? null,
   };
 }
 
@@ -162,5 +234,9 @@ export function serializePurchase(
     purchased_at: p.purchased_at.toISOString(),
     created_at: p.created_at.toISOString(),
     items: p.items.map(serializePurchaseItem),
+    price_per_gram: p.price_per_gram ? Number(p.price_per_gram) : null,
+    total_price: p.total_price ? Number(p.total_price) : null,
+    currency: p.currency ?? null,
+    payment_status: p.payment_status ?? null,
   };
 }

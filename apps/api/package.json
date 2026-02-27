@@ -9,6 +9,7 @@
     "start": "tsx src/server.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@asm-kyc/database": "workspace:*",
     "@asm-kyc/shared": "workspace:*",
     "@fastify/cookie": "^11.0.0",

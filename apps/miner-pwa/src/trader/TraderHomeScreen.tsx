@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { useI18n, interpolate } from '../i18n/I18nContext';
-import { apiFetch } from '../api/client';
-import type { PurchaseListResponse } from '@asm-kyc/shared';
+import { apiFetch, NetworkError } from '../api/client';
+import { setListCache, getListCache } from '../offline/db';
+import type { PurchaseListResponse, PurchaseListItem } from '@asm-kyc/shared';
 import { PlaceholderCard } from '../home/PlaceholderCard';
 
 interface Props {
@@ -16,13 +17,25 @@ export function TraderHomeScreen({ onNavigate }: Props) {
   const [totalWeight, setTotalWeight] = useState(0);
 
   useEffect(() => {
-    apiFetch<PurchaseListResponse>('/purchases')
-      .then((data) => {
+    const load = async () => {
+      try {
+        const data = await apiFetch<PurchaseListResponse>('/purchases');
         setTotalPurchases(data.total);
         const weight = data.purchases.reduce((sum, p) => sum + p.total_weight, 0);
         setTotalWeight(weight);
-      })
-      .catch(() => {});
+        await setListCache('purchases-list', data.purchases);
+      } catch (err) {
+        if (err instanceof NetworkError) {
+          const cached = await getListCache<PurchaseListItem[]>('purchases-list');
+          if (cached) {
+            setTotalPurchases(cached.length);
+            const weight = cached.reduce((sum, p) => sum + p.total_weight, 0);
+            setTotalWeight(weight);
+          }
+        }
+      }
+    };
+    load();
   }, []);
 
   const needsOnboarding = !user?.profile?.profile_completed_at;

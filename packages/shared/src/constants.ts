@@ -23,3 +23,19 @@ export type RecordStatus = (typeof RECORD_STATUSES)[number];
 
 export const COMPLIANCE_REVIEW_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'FLAGGED'] as const;
 export type ComplianceReviewStatus = (typeof COMPLIANCE_REVIEW_STATUSES)[number];
+
+// Phase 6: Payment constants
+export const PAYMENT_STATUSES = ['NONE', 'PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'] as const;
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+export const PAYMENT_TYPES = ['COLLECTION', 'DISBURSEMENT'] as const;
+export type PaymentType = (typeof PAYMENT_TYPES)[number];
+
+export const PAYMENT_METHODS = ['BANK_TRANSFER', 'MOBILE_MONEY'] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+export const METAL_ELEMENTS = ['Au', 'Ag', 'Cu', 'Pt', 'Pd', 'Fe', 'Zn', 'Ni'] as const;
+export type MetalElement = (typeof METAL_ELEMENTS)[number];
+
+export const VISION_CONFIDENCE = ['high', 'medium', 'low'] as const;
+export type VisionConfidence = (typeof VISION_CONFIDENCE)[number];

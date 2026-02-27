@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { apiFetch } from '../api/client';
+import { apiFetch, NetworkError } from '../api/client';
 import { useI18n, interpolate } from '../i18n/I18nContext';
+import { setListCache, getListCache } from '../offline/db';
 import type { AvailableRecordListResponse, AvailableRecordListItem } from '@asm-kyc/shared';
 import rawGoldIcon from '../assets/gold-types/raw-gold.png';
 import barIcon from '../assets/gold-types/bar.png';
@@ -23,10 +24,21 @@ export function AvailableRecordsList({ onPurchase }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    apiFetch<AvailableRecordListResponse>('/records/available')
-      .then((data) => setRecords(data.records))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    const load = async () => {
+      try {
+        const data = await apiFetch<AvailableRecordListResponse>('/records/available');
+        setRecords(data.records);
+        await setListCache('available-records-list', data.records);
+      } catch (err) {
+        if (err instanceof NetworkError) {
+          const cached = await getListCache<AvailableRecordListItem[]>('available-records-list');
+          if (cached) setRecords(cached);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const goldTypeLabel = (val: string | null) => {

@@ -10,17 +10,36 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Thrown when a fetch fails due to network connectivity (offline, DNS failure, etc.)
+ * Distinct from ApiError which means the server responded with an error status.
+ */
+export class NetworkError extends Error {
+  constructor(message = 'Network request failed — you may be offline') {
+    super(message);
+    this.name = 'NetworkError';
+  }
+}
+
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const headers: Record<string, string> = { ...options?.headers as Record<string, string> };
   if (options?.body) {
     headers['Content-Type'] = headers['Content-Type'] ?? 'application/json';
   }
 
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      ...options,
+      headers,
+      credentials: 'include',
+    });
+  } catch (err) {
+    // fetch() throws TypeError on network failure (offline, DNS, CORS preflight fail, etc.)
+    throw new NetworkError(
+      err instanceof Error ? err.message : 'Network request failed',
+    );
+  }
 
   if (res.status === 401) {
     window.dispatchEvent(new CustomEvent('auth:unauthorized'));

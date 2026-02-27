@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { useI18n } from '../i18n/I18nContext';
-import { apiFetch, ApiError } from '../api/client';
+import { apiFetch, ApiError, NetworkError } from '../api/client';
+import { useOnlineStatus } from '../offline/connectivity';
+import { enqueueRecordSync } from '../offline/syncQueue';
+import type { DraftRecord } from '../offline/db';
 import { RecordCreateSchema, RecordSubmitSchema } from '@asm-kyc/shared';
 import type { RecordResponse, RecordPhotoResponse } from '@asm-kyc/shared';
 import { PhotoCapture } from './PhotoCapture';
+import { ScaleCapture } from './components/ScaleCapture';
+import { XrfCapture } from './components/XrfCapture';
+import { MetalPurityTable } from './components/MetalPurityTable';
+import { LocationFields } from './components/LocationFields';
+import type { MineSiteListResponse, SalesPartnerListResponse, MineSiteResponse, SalesPartnerListItem } from '@asm-kyc/shared';
 import rawGoldIcon from '../assets/gold-types/raw-gold.png';
 import barIcon from '../assets/gold-types/bar.png';
 import lotIcon from '../assets/gold-types/lot.png';
@@ -24,6 +32,7 @@ const GOLD_TYPE_OPTIONS = [
 export function RecordForm({ record, onSaved, onBack }: Props) {
   const { user } = useAuth();
   const { t } = useI18n();
+  const isOnline = useOnlineStatus();
   const isEdit = !!record;
 
   const [form, setForm] = useState({
@@ -46,6 +55,42 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [toast, setToast] = useState('');
+
+  // Phase 6: enhanced fields
+  const [scalePhoto, setScalePhoto] = useState<{ data: string; mime: string } | null>(null);
+  const [xrfPhoto, setXrfPhoto] = useState<{ data: string; mime: string } | null>(null);
+  const [purities, setPurities] = useState<Array<{ element: string; purity: number }>>([]);
+  const [country, setCountry] = useState(record?.country ?? '');
+  const [locality, setLocality] = useState(record?.locality ?? '');
+  const [latitude, setLatitude] = useState(record?.gps_latitude?.toString() ?? '');
+  const [longitude, setLongitude] = useState(record?.gps_longitude?.toString() ?? '');
+  const [mineSiteId, setMineSiteId] = useState(record?.mine_site?.id ?? '');
+  const [buyerId, setBuyerId] = useState('');
+  const [mineSites, setMineSites] = useState<MineSiteResponse[]>([]);
+  const [partners, setPartners] = useState<SalesPartnerListItem[]>([]);
+
+  useEffect(() => {
+    // Load mine sites
+    apiFetch<MineSiteListResponse>('/mine-sites')
+      .then((data) => {
+        setMineSites(data.sites);
+        if (!mineSiteId && data.sites.length > 0) {
+          const defaultSite = data.sites.find((s) => s.is_default);
+          if (defaultSite) setMineSiteId(defaultSite.id);
+        }
+      })
+      .catch(() => {});
+
+    // Load sales partners for buyer selection
+    apiFetch<SalesPartnerListResponse>('/sales-partners')
+      .then((data) => {
+        setPartners(data.partners);
+        if (!buyerId && data.partners.length > 0) {
+          setBuyerId(data.partners[0].partner_id);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const update = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -72,6 +117,18 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
     extraction_date: form.extraction_date || undefined,
     gold_type: form.gold_type || undefined,
     notes: form.notes || undefined,
+    // Phase 6: enhanced fields
+    scale_photo_data: scalePhoto?.data || undefined,
+    scale_photo_mime: scalePhoto?.mime || undefined,
+    xrf_photo_data: xrfPhoto?.data || undefined,
+    xrf_photo_mime: xrfPhoto?.mime || undefined,
+    gps_latitude: latitude ? parseFloat(latitude) : undefined,
+    gps_longitude: longitude ? parseFloat(longitude) : undefined,
+    country: country || undefined,
+    locality: locality || undefined,
+    mine_site_id: mineSiteId || undefined,
+    buyer_id: buyerId || undefined,
+    metal_purities: purities.length > 0 ? purities : undefined,
   });
 
   const handlePhotoAdd = (dataUri: string) => {
@@ -116,6 +173,29 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
     setTimeout(() => setToast(''), 3000);
   };
 
+  /** Save offline as a draft in IndexedDB + enqueue for sync */
+  const saveOffline = async (submitAfterSync: boolean) => {
+    const payload = buildPayload();
+    const draft: DraftRecord = {
+      id: crypto.randomUUID(),
+      syncStatus: 'pending',
+      createdAt: new Date().toISOString(),
+      data: {
+        weight_grams: payload.weight_grams ?? null,
+        estimated_purity: payload.estimated_purity ?? null,
+        origin_mine_site: payload.origin_mine_site ?? null,
+        extraction_date: payload.extraction_date ?? null,
+        gold_type: payload.gold_type ?? null,
+        notes: payload.notes ?? null,
+      },
+      photos: newPhotos.map((data) => ({ data, mime_type: 'image/jpeg' })),
+      submitAfterSync,
+    };
+    await enqueueRecordSync(draft);
+    showToast(t.sync.savedOffline);
+    onBack();
+  };
+
   const handleSaveDraft = async () => {
     const payload = buildPayload();
     const parsed = RecordCreateSchema.safeParse(payload);
@@ -126,6 +206,12 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
         if (key) fieldErrors[key] = issue.message;
       });
       setErrors(fieldErrors);
+      return;
+    }
+
+    // Offline path: save locally and enqueue for sync
+    if (!isOnline && !isEdit) {
+      await saveOffline(false);
       return;
     }
 
@@ -150,6 +236,11 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
       showToast(t.records.draftSaved);
       onSaved(refreshed);
     } catch (err) {
+      if (err instanceof NetworkError && !isEdit) {
+        // Went offline during save — fall back to offline storage
+        await saveOffline(false);
+        return;
+      }
       if (err instanceof ApiError) {
         const body = err.body as { message?: string | unknown[] } | null;
         if (typeof body?.message === 'string') {
@@ -181,6 +272,13 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
 
   const confirmSubmit = async () => {
     setShowConfirm(false);
+
+    // Offline path: save locally with submit flag
+    if (!isOnline && !isEdit) {
+      await saveOffline(true);
+      return;
+    }
+
     setSubmitting(true);
     try {
       // Save first
@@ -206,6 +304,11 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
       showToast(t.records.recordSubmitted);
       onSaved(submitted);
     } catch (err) {
+      if (err instanceof NetworkError && !isEdit) {
+        // Went offline during submit — fall back to offline storage
+        await saveOffline(true);
+        return;
+      }
       if (err instanceof ApiError) {
         const body = err.body as { message?: string | unknown[] } | null;
         if (typeof body?.message === 'string') {
@@ -318,6 +421,99 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
         />
         {errors.extraction_date && <span className="field-error">{errors.extraction_date}</span>}
       </div>
+
+      {/* Scale Photo Capture */}
+      <ScaleCapture
+        onWeightExtracted={(weight, photoData, mimeType) => {
+          setScalePhoto({ data: photoData, mime: mimeType });
+          if (weight != null) {
+            update('weight_grams', weight.toString());
+          }
+        }}
+        onPhotoOnly={(photoData, mimeType) => {
+          setScalePhoto({ data: photoData, mime: mimeType });
+        }}
+      />
+
+      {/* XRF Photo Capture */}
+      <div style={{ marginTop: 16 }}>
+        <XrfCapture
+          onPuritiesExtracted={(extractedPurities, photoData, mimeType) => {
+            setXrfPhoto({ data: photoData, mime: mimeType });
+            setPurities(extractedPurities);
+            // Auto-fill estimated purity from Au reading
+            const au = extractedPurities.find((p) => p.element === 'Au');
+            if (au) {
+              update('estimated_purity', au.purity.toString());
+            }
+          }}
+          onPhotoOnly={(photoData, mimeType) => {
+            setXrfPhoto({ data: photoData, mime: mimeType });
+          }}
+        />
+      </div>
+
+      {/* Metal Purities Table */}
+      {(purities.length > 0 || xrfPhoto) && (
+        <div style={{ marginTop: 16 }}>
+          <MetalPurityTable purities={purities} onChange={setPurities} />
+        </div>
+      )}
+
+      {/* Location */}
+      <div style={{ marginTop: 16 }}>
+        <LocationFields
+          country={country}
+          locality={locality}
+          latitude={latitude}
+          longitude={longitude}
+          onCountryChange={setCountry}
+          onLocalityChange={setLocality}
+          onLatitudeChange={setLatitude}
+          onLongitudeChange={setLongitude}
+        />
+      </div>
+
+      {/* Mine Site Selection */}
+      {mineSites.length > 0 && (
+        <div className="form-group" style={{ marginTop: 16 }}>
+          <label>{t.vision.selectMineSite}</label>
+          <select
+            className="form-input"
+            value={mineSiteId}
+            onChange={(e) => {
+              setMineSiteId(e.target.value);
+              // Auto-fill origin from mine site
+              const site = mineSites.find((s) => s.id === e.target.value);
+              if (site) {
+                update('origin_mine_site', site.name);
+              }
+            }}
+          >
+            <option value="">—</option>
+            {mineSites.map((site) => (
+              <option key={site.id} value={site.id}>{site.name}{site.is_default ? ' ★' : ''}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Buyer Selection */}
+      {partners.length > 0 && (
+        <div className="form-group" style={{ marginTop: 8 }}>
+          <label>{t.vision.selectBuyer}</label>
+          <select
+            className="form-input"
+            value={buyerId}
+            onChange={(e) => setBuyerId(e.target.value)}
+          >
+            <option value="">—</option>
+            {partners.map((p) => (
+              <option key={p.partner_id} value={p.partner_id}>{p.partner_name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Notes */}
       <div className="form-group">

@@ -7,6 +7,8 @@ import {
   serializePurchaseListItem,
   serializePurchase,
 } from '../lib/serialize.js';
+import { featureFlags } from '../lib/featureFlags.js';
+import { createPayment } from '../lib/yellowcard.js';
 
 export const purchaseRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', authenticate);
@@ -73,6 +75,44 @@ export const purchaseRoutes: FastifyPluginAsync = async (app) => {
     },
   });
 
+  // GET /purchases/:id/payment-status — poll payment status
+  app.get<{ Params: { id: string } }>('/:id/payment-status', {
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER')],
+    handler: async (request, reply) => {
+      const user = request.user!;
+
+      const purchase = await prisma.purchase.findUnique({
+        where: { id: request.params.id },
+        include: { payments: { orderBy: { created_at: 'desc' }, take: 1 } },
+      });
+
+      if (!purchase) {
+        return reply.status(404).send({ statusCode: 404, error: 'Not Found', message: 'Purchase not found' });
+      }
+      if (purchase.trader_id !== user.id) {
+        return reply.status(403).send({ statusCode: 403, error: 'Forbidden', message: 'Not your purchase' });
+      }
+
+      const latestPayment = purchase.payments[0] ?? null;
+
+      return reply.send({
+        purchase_id: purchase.id,
+        payment_status: purchase.payment_status ?? 'NONE',
+        latest_payment: latestPayment
+          ? {
+              id: latestPayment.id,
+              type: latestPayment.type,
+              amount: Number(latestPayment.amount),
+              currency: latestPayment.currency,
+              status: latestPayment.status,
+              payment_method: latestPayment.payment_method,
+              created_at: latestPayment.created_at.toISOString(),
+            }
+          : null,
+      });
+    },
+  });
+
   // POST /purchases — create a purchase (atomic transaction)
   app.post('/', {
     preHandler: [requireRole('TRADER_USER', 'REFINER_USER')],
@@ -87,7 +127,26 @@ export const purchaseRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const user = request.user!;
-      const { record_ids, notes } = parsed.data;
+      const { record_ids, notes, price_per_gram, payment_method } = parsed.data;
+      const ycEnabled = featureFlags.yellowCardEnabled;
+
+      // When YC enabled, require price_per_gram and payment_method
+      if (ycEnabled) {
+        if (!price_per_gram) {
+          return reply.status(400).send({
+            statusCode: 400,
+            error: 'Validation Error',
+            message: 'price_per_gram is required when payments are enabled',
+          });
+        }
+        if (!payment_method) {
+          return reply.status(400).send({
+            statusCode: 400,
+            error: 'Validation Error',
+            message: 'payment_method is required when payments are enabled',
+          });
+        }
+      }
 
       // Deduplicate
       const uniqueIds = [...new Set(record_ids)];
@@ -136,18 +195,80 @@ export const purchaseRoutes: FastifyPluginAsync = async (app) => {
         0,
       );
 
-      // Atomic transaction: create purchase + items + update record statuses
+      // Calculate pricing when YC is enabled
+      const totalPrice = ycEnabled && price_per_gram ? totalWeight * price_per_gram : undefined;
+
+      if (!ycEnabled) {
+        // ── Flag OFF: instant purchase (original behaviour) ──
+        const purchase = await prisma.$transaction(async (tx) => {
+          const p = await tx.purchase.create({
+            data: {
+              trader_id: user.id,
+              total_weight: totalWeight,
+              total_items: uniqueIds.length,
+              notes: notes || null,
+              items: {
+                create: uniqueIds.map((recordId) => ({
+                  record_id: recordId,
+                })),
+              },
+            },
+            include: {
+              items: {
+                include: {
+                  record: {
+                    include: {
+                      creator: { include: { miner_profile: true } },
+                      _count: { select: { photos: true } },
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          // Mark all records as PURCHASED immediately
+          await tx.record.updateMany({
+            where: { id: { in: uniqueIds } },
+            data: {
+              status: 'PURCHASED',
+              purchased_by: user.id,
+              purchased_at: new Date(),
+            },
+          });
+
+          return p;
+        });
+
+        return reply.status(201).send(serializePurchase(purchase));
+      }
+
+      // ── Flag ON: create purchase with PENDING payment ──
       const purchase = await prisma.$transaction(async (tx) => {
+        // Calculate per-item pricing
+        const itemsData = uniqueIds.map((recordId) => {
+          const rec = records.find((r) => r.id === recordId)!;
+          const wt = rec.weight_grams ? Number(rec.weight_grams) : 0;
+          const lineTotal = price_per_gram! * wt;
+          return {
+            record_id: recordId,
+            price_per_gram: price_per_gram!,
+            line_total: lineTotal,
+          };
+        });
+
         const p = await tx.purchase.create({
           data: {
             trader_id: user.id,
             total_weight: totalWeight,
             total_items: uniqueIds.length,
             notes: notes || null,
+            price_per_gram: price_per_gram!,
+            total_price: totalPrice!,
+            currency: 'ZMW',
+            payment_status: 'PENDING',
             items: {
-              create: uniqueIds.map((recordId) => ({
-                record_id: recordId,
-              })),
+              create: itemsData,
             },
           },
           include: {
@@ -164,18 +285,36 @@ export const purchaseRoutes: FastifyPluginAsync = async (app) => {
           },
         });
 
-        // Mark all records as PURCHASED
-        await tx.record.updateMany({
-          where: { id: { in: uniqueIds } },
-          data: {
-            status: 'PURCHASED',
-            purchased_by: user.id,
-            purchased_at: new Date(),
-          },
-        });
-
         return p;
       });
+
+      // Initiate Yellow Card collection (fire-and-forget, don't block response)
+      try {
+        const ycPayment = await createPayment({
+          amount: totalPrice!,
+          currency: 'ZMW',
+          channelId: payment_method === 'MOBILE_MONEY' ? 'mobile_money_zm' : 'bank_transfer_zm',
+          reason: `Gold purchase ${purchase.id}`,
+          sender: { name: user.username, country: 'ZM' },
+        });
+
+        // Create local payment record
+        await prisma.payment.create({
+          data: {
+            purchase_id: purchase.id,
+            yellowcard_txn_id: ycPayment.id,
+            type: 'COLLECTION',
+            amount: totalPrice!,
+            currency: 'ZMW',
+            status: 'PENDING',
+            payment_method: payment_method!,
+            yellowcard_meta: ycPayment as object,
+          },
+        });
+      } catch (err) {
+        app.log.error(`Yellow Card payment initiation failed for purchase ${purchase.id}: ${err}`);
+        // Purchase was created with PENDING — admin can retry or it can be updated via webhook
+      }
 
       return reply.status(201).send(serializePurchase(purchase));
     },

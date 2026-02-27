@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { apiFetch, ApiError } from '../api/client';
+import { apiFetch, ApiError, NetworkError } from '../api/client';
+import { getAuthCache, setAuthCache, clearAuthCache, clearAllCaches } from '../offline/db';
 import type { MeResponse } from '@asm-kyc/shared';
 
 interface AuthState {
@@ -27,8 +28,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const me = await apiFetch<MeResponse>('/me');
       setUser(me);
-    } catch {
-      setUser(null);
+      // Cache the successful response for offline use
+      await setAuthCache(me);
+    } catch (err) {
+      if (err instanceof NetworkError) {
+        // Offline — try to load from IndexedDB cache so user stays "logged in"
+        const cached = await getAuthCache();
+        if (cached) {
+          setUser(cached);
+        } else {
+          setUser(null);
+        }
+      } else {
+        // Real auth failure (401, etc.) — clear cache
+        setUser(null);
+        await clearAuthCache();
+      }
     } finally {
       setLoading(false);
     }
@@ -36,7 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchMe();
-    const handler = () => setUser(null);
+    const handler = () => {
+      setUser(null);
+      clearAuthCache();
+    };
     window.addEventListener('auth:unauthorized', handler);
     return () => window.removeEventListener('auth:unauthorized', handler);
   }, [fetchMe]);
@@ -47,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ username, password }),
     });
     setUser(me);
+    await setAuthCache(me);
   };
 
   const register = async (data: {
@@ -61,23 +80,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify(data),
     });
     setUser(me);
+    await setAuthCache(me);
   };
 
   const logout = async () => {
     try {
       await apiFetch('/auth/logout', { method: 'POST' });
     } catch (e) {
-      if (!(e instanceof ApiError && e.statusCode === 401)) throw e;
+      if (!(e instanceof ApiError && e.statusCode === 401) && !(e instanceof NetworkError)) throw e;
     }
     setUser(null);
+    // Clear all IndexedDB caches on logout
+    await clearAllCaches();
   };
 
   const refreshUser = useCallback(async () => {
     try {
       const me = await apiFetch<MeResponse>('/me');
       setUser(me);
+      await setAuthCache(me);
     } catch {
-      // silent fail
+      // silent fail — keep current cached user if offline
     }
   }, []);
 

@@ -13,6 +13,11 @@ import { recordRoutes } from './routes/records.js';
 import { purchaseRoutes } from './routes/purchases.js';
 import { salesPartnerRoutes } from './routes/sales-partners.js';
 import { adminRoutes } from './routes/admin/index.js';
+import { webhookRoutes } from './routes/webhooks.js';
+import { mineSiteRoutes } from './routes/mine-sites.js';
+import { visionRoutes } from './routes/vision.js';
+import { receiptRoutes } from './routes/receipts.js';
+import { featureFlags } from './lib/featureFlags.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 });
@@ -39,13 +44,24 @@ export async function buildApp() {
   // All API routes under /api prefix
   await app.register(
     async (api) => {
+      // Public endpoint: feature flags (no auth required)
+      api.get('/feature-flags', async () => ({
+        yellowcard_enabled: featureFlags.yellowCardEnabled,
+      }));
+
       await api.register(authRoutes, { prefix: '/auth' });
       await api.register(meRoutes);
       await api.register(profileRoutes);
       await api.register(recordRoutes, { prefix: '/records' });
       await api.register(purchaseRoutes, { prefix: '/purchases' });
       await api.register(salesPartnerRoutes, { prefix: '/sales-partners' });
+      await api.register(mineSiteRoutes, { prefix: '/mine-sites' });
+      await api.register(visionRoutes, { prefix: '/vision' });
+      await api.register(receiptRoutes, { prefix: '/records' });
       await api.register(adminRoutes, { prefix: '/admin' });
+
+      // Webhook routes: no auth middleware (verified by signature)
+      await api.register(webhookRoutes, { prefix: '/webhooks' });
     },
     { prefix: '/api' },
   );

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { I18nProvider, useI18n, type Language } from './i18n/I18nContext';
 import { LoginScreen } from './auth/LoginScreen';
@@ -17,11 +17,16 @@ import { PurchaseFlow } from './trader/PurchaseFlow';
 import { PurchasesList } from './trader/PurchasesList';
 import { PurchaseDetail } from './trader/PurchaseDetail';
 import { SalesPartnerScreen } from './partners/SalesPartnerScreen';
+import { MineSiteScreen } from './mine-sites/MineSiteScreen';
+import { SyncStatusBanner } from './offline/SyncStatusBanner';
+import { initSyncEngine, teardownSyncEngine } from './offline/syncEngine';
+import { FeatureFlagProvider } from './config/FeatureFlagContext';
 
 type AuthScreen = 'login' | 'register';
 type AppScreen =
   | 'home' | 'records' | 'profile' | 'onboarding' | 'record-create' | 'record-detail' | 'record-edit'
   | 'trader-home' | 'available-records' | 'purchase-flow' | 'purchases' | 'purchase-detail'
+  | 'mine-sites'
   | 'sales-partners';
 
 function I18nWrapper({ children }: { children: ReactNode }) {
@@ -88,7 +93,7 @@ function AppContent() {
   const renderScreen = () => {
     switch (appScreen) {
       case 'profile':
-        return <ProfileScreen onEdit={() => setAppScreen('onboarding')} />;
+        return <ProfileScreen onEdit={() => setAppScreen('onboarding')} onManageSites={isMiner ? () => setAppScreen('mine-sites') : undefined} />;
       case 'records':
         return (
           <RecordsList
@@ -131,6 +136,8 @@ function AppContent() {
             onBack={() => setAppScreen('record-detail')}
           />
         );
+      case 'mine-sites':
+        return <MineSiteScreen onBack={() => setAppScreen('profile')} />;
       // Miner: sales partners
       case 'sales-partners':
         return <SalesPartnerScreen />;
@@ -247,8 +254,17 @@ function AppContent() {
     },
   ];
 
+  // Initialize sync engine when user is logged in
+  useEffect(() => {
+    if (user) {
+      initSyncEngine();
+    }
+    return () => teardownSyncEngine();
+  }, [user]);
+
   return (
     <div className="app-shell">
+      <SyncStatusBanner />
       <main className="main-content">{renderScreen()}</main>
       <BottomTabBar tabs={isTraderOrRefiner ? traderTabs : minerTabs} />
     </div>
@@ -258,9 +274,11 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <I18nWrapper>
-        <AppContent />
-      </I18nWrapper>
+      <FeatureFlagProvider>
+        <I18nWrapper>
+          <AppContent />
+        </I18nWrapper>
+      </FeatureFlagProvider>
     </AuthProvider>
   );
 }

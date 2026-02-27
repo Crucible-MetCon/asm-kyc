@@ -364,6 +364,168 @@ Ndasumina ukuti nabelenga no kumfwikisha ifyo fyalembwa, kabili ndasumina pa kut
     console.log('  2 sample compliance reviews + 1 audit log');
   }
 
+  // Phase 6: Add payment data to existing purchase (when payment model exists)
+  try {
+    const existingPayment = await prisma.payment.findFirst({
+      where: { purchase_id: '00000000-0000-0000-0000-000000000010' },
+    });
+    if (!existingPayment) {
+      await prisma.purchase.update({
+        where: { id: '00000000-0000-0000-0000-000000000010' },
+        data: {
+          price_per_gram: 850.00,
+          total_price: 63750.00,
+          currency: 'ZMW',
+          payment_status: 'COMPLETED',
+        },
+      });
+
+      await prisma.payment.create({
+        data: {
+          id: '00000000-0000-0000-0000-000000000040',
+          purchase_id: '00000000-0000-0000-0000-000000000010',
+          yellowcard_txn_id: 'yc_sandbox_test_001',
+          type: 'COLLECTION',
+          amount: 63750.00,
+          currency: 'ZMW',
+          status: 'COMPLETE',
+          payment_method: 'MOBILE_MONEY',
+          fee_amount: 1275.00,
+          fee_currency: 'ZMW',
+          yellowcard_meta: { sandbox: true, test: true },
+          webhook_received_at: new Date(),
+        },
+      });
+      console.log('  1 sample payment (COLLECTION for purchase)');
+    }
+  } catch {
+    // Payment model may not exist yet if migration hasn't run
+    console.log('  Skipped payment seed (model not yet available)');
+  }
+
+  // Phase 6 Part C: Mine sites, record numbers, metal purities, receipt
+  try {
+    // Initialize record counter
+    await prisma.recordCounter.upsert({
+      where: { id: 'singleton' },
+      update: { value: 5 },
+      create: { id: 'singleton', value: 5 },
+    });
+
+    // Assign record numbers to existing records
+    const recordIds = [
+      '00000000-0000-0000-0000-000000000001',
+      '00000000-0000-0000-0000-000000000002',
+      '00000000-0000-0000-0000-000000000003',
+      '00000000-0000-0000-0000-000000000004',
+      '00000000-0000-0000-0000-000000000005',
+    ];
+    for (let i = 0; i < recordIds.length; i++) {
+      const rn = `GT-2026-${String(i + 1).padStart(5, '0')}`;
+      await prisma.record.update({
+        where: { id: recordIds[i] },
+        data: { record_number: rn },
+      }).catch(() => {}); // Ignore if already set
+    }
+
+    // Mine sites for miner1
+    const mineSite1 = await prisma.mineSite.upsert({
+      where: { id: '00000000-0000-0000-0000-000000000050' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0000-000000000050',
+        miner_id: miner1User.id,
+        name: 'Mumbwa Mine Site',
+        gps_latitude: -15.2833,
+        gps_longitude: 27.0500,
+        mining_license_number: 'ZM-MBW-2025-001',
+        is_default: true,
+      },
+    });
+
+    await prisma.mineSite.upsert({
+      where: { id: '00000000-0000-0000-0000-000000000051' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0000-000000000051',
+        miner_id: miner1User.id,
+        name: 'Chibuluma South',
+        gps_latitude: -12.3800,
+        gps_longitude: 28.0500,
+      },
+    });
+
+    // Mine site for miner2
+    await prisma.mineSite.upsert({
+      where: { id: '00000000-0000-0000-0000-000000000052' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0000-000000000052',
+        miner_id: miner2User.id,
+        name: 'Kasempa Gold Mine',
+        gps_latitude: -13.45,
+        gps_longitude: 26.80,
+        mining_license_number: 'ZM-KAS-2025-002',
+        is_default: true,
+      },
+    });
+
+    // Link records to mine sites
+    await prisma.record.update({
+      where: { id: '00000000-0000-0000-0000-000000000001' },
+      data: {
+        mine_site_id: mineSite1.id,
+        gps_latitude: -15.2833,
+        gps_longitude: 27.0500,
+        country: 'Zambia',
+        locality: 'Mumbwa',
+      },
+    }).catch(() => {});
+
+    // Metal purities for record 1 (the submitted RAW_GOLD record)
+    const existingPurities = await prisma.metalPurity.count({
+      where: { record_id: '00000000-0000-0000-0000-000000000001', receipt_id: null },
+    });
+    if (existingPurities === 0) {
+      await prisma.metalPurity.createMany({
+        data: [
+          { id: '00000000-0000-0000-0000-000000000060', record_id: '00000000-0000-0000-0000-000000000001', element: 'Au', purity: 85.00, sort_order: 0 },
+          { id: '00000000-0000-0000-0000-000000000061', record_id: '00000000-0000-0000-0000-000000000001', element: 'Ag', purity: 8.50, sort_order: 1 },
+          { id: '00000000-0000-0000-0000-000000000062', record_id: '00000000-0000-0000-0000-000000000001', element: 'Cu', purity: 4.20, sort_order: 2 },
+        ],
+      });
+    }
+
+    // Sample receipt: trader1 measured record 4 (the purchased one)
+    const existingReceipt = await prisma.recordReceipt.findFirst({
+      where: { record_id: '00000000-0000-0000-0000-000000000004' },
+    });
+    if (!existingReceipt) {
+      const receipt = await prisma.recordReceipt.create({
+        data: {
+          id: '00000000-0000-0000-0000-000000000070',
+          record_id: '00000000-0000-0000-0000-000000000004',
+          received_by: trader1User.id,
+          receipt_weight: 74.8, // Slightly different from miner's 75g
+          gps_latitude: -15.4167,
+          gps_longitude: 28.2833,
+          country: 'Zambia',
+          locality: 'Lusaka',
+        },
+      });
+      await prisma.metalPurity.createMany({
+        data: [
+          { record_id: '00000000-0000-0000-0000-000000000004', receipt_id: receipt.id, element: 'Au', purity: 79.50, sort_order: 0 },
+          { record_id: '00000000-0000-0000-0000-000000000004', receipt_id: receipt.id, element: 'Ag', purity: 12.30, sort_order: 1 },
+        ],
+      });
+    }
+
+    console.log('  3 mine sites, record numbers assigned, metal purities, 1 receipt');
+  } catch (err) {
+    console.log('  Skipped Phase 6 Part C seed:', err instanceof Error ? err.message : 'unknown error');
+  }
+
   console.log('Seed complete:');
   console.log('  admin   / admin123   (ADMIN_USER)');
   console.log('  miner1  / miner123   (MINER_USER)');
@@ -372,7 +534,7 @@ Ndasumina ukuti nabelenga no kumfwikisha ifyo fyalembwa, kabili ndasumina pa kut
   console.log('  refiner1/ refiner123 (REFINER_USER)');
   console.log('  consent v1.0 (en + bem)');
   console.log('  5 sample records (3 submitted, 1 draft, 1 purchased)');
-  console.log('  1 sample purchase (trader1 → miner2 record)');
+  console.log('  1 sample purchase (trader1 → miner2 record) with payment data');
   console.log('  Sales partners:');
   console.log('    miner1 → trader1, refiner1');
   console.log('    miner2 → trader1');

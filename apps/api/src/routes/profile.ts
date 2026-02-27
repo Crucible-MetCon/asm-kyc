@@ -3,6 +3,7 @@ import { prisma } from '@asm-kyc/database';
 import { ProfileUpdateSchema, ConsentAcceptSchema, LanguageUpdateSchema } from '@asm-kyc/shared';
 import { authenticate } from '../middleware/auth.js';
 import { serializeProfile } from '../lib/serialize.js';
+import { triggerKycBonus } from '../lib/kycBonus.js';
 
 export const profileRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', authenticate);
@@ -34,6 +35,9 @@ export const profileRoutes: FastifyPluginAsync = async (app) => {
         profile_completed_at: new Date(),
       },
     });
+
+    // Trigger KYC bonus after profile completion (no-op when Yellow Card disabled)
+    triggerKycBonus(user.id).catch(() => {});
 
     return reply.send({ ok: true, profile: serializeProfile(profile) });
   });

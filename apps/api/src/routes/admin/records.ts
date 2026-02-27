@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { prisma } from '@asm-kyc/database';
 import type { AdminRecordListItem, AdminRecordDetail, ComplianceReviewResponse } from '@asm-kyc/shared';
-import { serializeRecordPhoto } from '../../lib/serialize.js';
+import { serializeRecordPhoto, serializeMetalPurity, serializeReceipt } from '../../lib/serialize.js';
 
 export const adminRecordRoutes: FastifyPluginAsync = async (app) => {
   // GET /api/admin/records — all records with filters
@@ -16,6 +16,7 @@ export const adminRecordRoutes: FastifyPluginAsync = async (app) => {
     if (search) {
       where.OR = [
         { origin_mine_site: { contains: search, mode: 'insensitive' } },
+        { record_number: { contains: search, mode: 'insensitive' } },
         { creator: { username: { contains: search, mode: 'insensitive' } } },
         { creator: { miner_profile: { full_name: { contains: search, mode: 'insensitive' } } } },
       ];
@@ -41,6 +42,7 @@ export const adminRecordRoutes: FastifyPluginAsync = async (app) => {
 
     const items: AdminRecordListItem[] = records.map((r) => ({
       id: r.id,
+      record_number: r.record_number ?? null,
       status: r.status,
       weight_grams: r.weight_grams ? Number(r.weight_grams) : null,
       estimated_purity: r.estimated_purity ? Number(r.estimated_purity) : null,
@@ -67,6 +69,15 @@ export const adminRecordRoutes: FastifyPluginAsync = async (app) => {
       include: {
         creator: { include: { miner_profile: true } },
         photos: { orderBy: { taken_at: 'asc' } },
+        mine_site: true,
+        metal_purities: { where: { receipt_id: null }, orderBy: { sort_order: 'asc' } },
+        receipts: {
+          include: {
+            receiver: { include: { miner_profile: true } },
+            purities: { orderBy: { sort_order: 'asc' } },
+          },
+          orderBy: { created_at: 'desc' },
+        },
         compliance_reviews: {
           include: {
             reviewer: { include: { miner_profile: true } },
@@ -119,6 +130,17 @@ export const adminRecordRoutes: FastifyPluginAsync = async (app) => {
       updated_at: record.updated_at.toISOString(),
       photos: record.photos.map(serializeRecordPhoto),
       compliance_reviews: reviews,
+      // Phase 6: enhanced fields
+      record_number: record.record_number ?? null,
+      mine_site_name: record.mine_site?.name ?? null,
+      gps_latitude: record.gps_latitude ? Number(record.gps_latitude) : null,
+      gps_longitude: record.gps_longitude ? Number(record.gps_longitude) : null,
+      country: record.country ?? null,
+      locality: record.locality ?? null,
+      has_scale_photo: !!record.scale_photo_data,
+      has_xrf_photo: !!record.xrf_photo_data,
+      metal_purities: record.metal_purities.map(serializeMetalPurity),
+      receipts: record.receipts.map(serializeReceipt),
     };
 
     return reply.send(detail);

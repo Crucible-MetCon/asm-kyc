@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { apiFetch } from '../api/client';
+import { apiFetch, NetworkError } from '../api/client';
 import { useI18n } from '../i18n/I18nContext';
+import { setCachedPurchaseDetail, getCachedPurchaseDetail } from '../offline/db';
 import type { PurchaseResponse } from '@asm-kyc/shared';
 import rawGoldIcon from '../assets/gold-types/raw-gold.png';
 import barIcon from '../assets/gold-types/bar.png';
@@ -23,10 +24,21 @@ export function PurchaseDetail({ purchaseId, onBack }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiFetch<PurchaseResponse>(`/purchases/${purchaseId}`)
-      .then(setPurchase)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    const load = async () => {
+      try {
+        const data = await apiFetch<PurchaseResponse>(`/purchases/${purchaseId}`);
+        setPurchase(data);
+        await setCachedPurchaseDetail(data);
+      } catch (err) {
+        if (err instanceof NetworkError) {
+          const cached = await getCachedPurchaseDetail(purchaseId);
+          if (cached) setPurchase(cached);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, [purchaseId]);
 
   const goldTypeLabel = (val: string | null) => {
@@ -41,6 +53,16 @@ export function PurchaseDetail({ purchaseId, onBack }: Props) {
 
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString();
 
+  const getPaymentStatusBadge = (status: string | null | undefined) => {
+    switch (status) {
+      case 'PENDING': return { label: t.trader.statusPending, className: 'status-payment-pending' };
+      case 'PROCESSING': return { label: t.trader.statusProcessing, className: 'status-payment-processing' };
+      case 'COMPLETED': return { label: t.trader.statusCompleted, className: 'status-payment-completed' };
+      case 'FAILED': return { label: t.trader.statusFailed, className: 'status-payment-failed' };
+      default: return null;
+    }
+  };
+
   if (loading) {
     return <div className="screen"><div className="loading-text">{t.common.loading}</div></div>;
   }
@@ -53,6 +75,8 @@ export function PurchaseDetail({ purchaseId, onBack }: Props) {
       </div>
     );
   }
+
+  const paymentBadge = getPaymentStatusBadge(purchase.payment_status);
 
   return (
     <div className="screen">
@@ -85,6 +109,28 @@ export function PurchaseDetail({ purchaseId, onBack }: Props) {
           </div>
         )}
       </div>
+
+      {/* Payment Information (when present) */}
+      {paymentBadge && (
+        <div className="purchase-summary" style={{ marginTop: 12 }}>
+          <div className="purchase-summary-row">
+            <span>{t.trader.paymentStatus}</span>
+            <span className={`status-badge ${paymentBadge.className}`}>{paymentBadge.label}</span>
+          </div>
+          {purchase.price_per_gram != null && (
+            <div className="purchase-summary-row">
+              <span>{t.trader.pricePerGram}</span>
+              <span>{purchase.currency ?? 'ZMW'} {purchase.price_per_gram?.toFixed(2)}/g</span>
+            </div>
+          )}
+          {purchase.total_price != null && (
+            <div className="purchase-summary-row">
+              <span>{t.trader.total}</span>
+              <span>{purchase.currency ?? 'ZMW'} {purchase.total_price?.toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Records */}
       <h2 style={{ fontSize: 16, fontWeight: 600, marginTop: 24, marginBottom: 12 }}>

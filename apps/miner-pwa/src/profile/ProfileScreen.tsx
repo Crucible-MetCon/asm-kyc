@@ -5,6 +5,7 @@ import type { UserProfile } from '@asm-kyc/shared';
 
 interface Props {
   onEdit: () => void;
+  onManageSites?: () => void;
 }
 
 function formatDate(iso: string): string {
@@ -29,7 +30,7 @@ function genderLabel(
   return map[gender] ?? gender;
 }
 
-export function ProfileScreen({ onEdit }: Props) {
+export function ProfileScreen({ onEdit, onManageSites }: Props) {
   const { user } = useAuth();
   const { t, lang, setLang } = useI18n();
   const profile = user?.profile as UserProfile | null | undefined;
@@ -126,6 +127,16 @@ export function ProfileScreen({ onEdit }: Props) {
           t={t}
         />
       </div>
+
+      {onManageSites && (
+        <button
+          className="btn btn-secondary btn-full"
+          style={{ marginTop: 12, marginBottom: 4 }}
+          onClick={onManageSites}
+        >
+          {'\u26CF\uFE0F'} {t.mineSites.manageSites}
+        </button>
+      )}
 
       <div className="profile-section">
         <h2>{t.profile.consentStatus}</h2>

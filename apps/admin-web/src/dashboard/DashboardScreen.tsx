@@ -30,6 +30,8 @@ export function DashboardScreen({ onNavigateRecords, onNavigateCompliance, onNav
   const getStatusCount = (status: string) =>
     stats.records_by_status.find((r) => r.status === status)?.count ?? 0;
 
+  const hasPayments = (stats.total_payments ?? 0) > 0;
+
   return (
     <div>
       <div className="page-header">
@@ -69,6 +71,17 @@ export function DashboardScreen({ onNavigateRecords, onNavigateCompliance, onNav
             {stats.total_compliance_reviews} total reviews
           </div>
         </button>
+
+        {/* Payment stats (only shown when there are payments) */}
+        {hasPayments && (
+          <div className="stat-card">
+            <div className="stat-value">{stats.total_payments}</div>
+            <div className="stat-label">Total Payments</div>
+            <div className="stat-breakdown">
+              {stats.completed_payments ?? 0} completed, {stats.pending_payments ?? 0} pending, {stats.failed_payments ?? 0} failed
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

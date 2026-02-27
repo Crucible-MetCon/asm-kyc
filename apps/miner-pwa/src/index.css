@@ -1274,3 +1274,169 @@ a,
   font-size: 13px;
   min-height: 32px;
 }
+
+/* ─── Phase 6: Sync Status Banner ─── */
+
+.sync-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 110;
+  min-height: 40px;
+}
+
+.sync-banner--offline {
+  background: #fffbeb;
+  color: #92400e;
+  border-bottom: 1px solid #fde68a;
+}
+
+.sync-banner--syncing {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-bottom: 1px solid #bfdbfe;
+}
+
+.sync-banner--error {
+  background: #fef2f2;
+  color: var(--color-error);
+  border-bottom: 1px solid #fecaca;
+}
+
+.sync-banner__icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.sync-banner__icon--spin {
+  animation: sync-spin 1s linear infinite;
+}
+
+@keyframes sync-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.sync-banner__retry {
+  margin-left: auto;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: var(--radius);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  min-height: 28px;
+  min-width: 28px;
+}
+
+/* Pending sync badge on record cards */
+
+.status-pending-sync {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #c4b5fd;
+}
+
+/* ─── Phase 6: Payment Styles ─── */
+
+.payment-method-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.payment-method-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 8px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  cursor: pointer;
+  min-height: var(--touch-min);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+}
+
+.payment-method-option.selected {
+  border-color: var(--color-gold);
+  background: rgba(184, 134, 11, 0.08);
+  color: var(--color-gold-dark);
+}
+
+.payment-method-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.payment-method-fee {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.payment-method-option.selected .payment-method-fee {
+  color: var(--color-gold);
+}
+
+/* Payment status card (pending/complete/failed screen) */
+
+.payment-status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px 24px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.payment-status-icon {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.payment-status-text {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* Payment status badges */
+
+.status-payment-pending {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.status-payment-processing {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.status-payment-completed {
+  background: #f0fdf4;
+  color: var(--color-success);
+  border: 1px solid #bbf7d0;
+}
+
+.status-payment-failed {
+  background: #fef2f2;
+  color: var(--color-error);
+  border: 1px solid #fecaca;
+}

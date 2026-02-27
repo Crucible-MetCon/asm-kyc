@@ -15,6 +15,10 @@ export const adminDashboardRoutes: FastifyPluginAsync = async (app) => {
       totalPurchases,
       totalReviews,
       pendingReviews,
+      totalPayments,
+      completedPayments,
+      pendingPayments,
+      failedPayments,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { role: 'MINER_USER' } }),
@@ -25,6 +29,10 @@ export const adminDashboardRoutes: FastifyPluginAsync = async (app) => {
       prisma.purchase.count(),
       prisma.complianceReview.count(),
       prisma.complianceReview.count({ where: { status: 'PENDING' } }),
+      prisma.payment.count(),
+      prisma.payment.count({ where: { status: 'COMPLETE' } }),
+      prisma.payment.count({ where: { status: { in: ['PENDING', 'PROCESS', 'CREATED'] } } }),
+      prisma.payment.count({ where: { status: 'FAILED' } }),
     ]);
 
     const stats: AdminDashboardStats = {
@@ -40,6 +48,10 @@ export const adminDashboardRoutes: FastifyPluginAsync = async (app) => {
       total_purchases: totalPurchases,
       total_compliance_reviews: totalReviews,
       pending_reviews: pendingReviews,
+      total_payments: totalPayments,
+      completed_payments: completedPayments,
+      pending_payments: pendingPayments,
+      failed_payments: failedPayments,
     };
 
     return reply.send(stats);

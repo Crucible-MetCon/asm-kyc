@@ -47,6 +47,15 @@ function AppContent() {
   const isTraderOrRefiner = user?.role === 'TRADER_USER' || user?.role === 'REFINER_USER';
   const isMiner = user?.role === 'MINER_USER';
 
+  // Initialize sync engine when user is logged in
+  // MUST be before any early returns to satisfy Rules of Hooks
+  useEffect(() => {
+    if (user) {
+      initSyncEngine();
+    }
+    return () => teardownSyncEngine();
+  }, [user]);
+
   if (loading) {
     return <div className="screen-centered">{t.common.loading}</div>;
   }
@@ -253,14 +262,6 @@ function AppContent() {
       onClick: () => setAppScreen('profile'),
     },
   ];
-
-  // Initialize sync engine when user is logged in
-  useEffect(() => {
-    if (user) {
-      initSyncEngine();
-    }
-    return () => teardownSyncEngine();
-  }, [user]);
 
   return (
     <div className="app-shell">

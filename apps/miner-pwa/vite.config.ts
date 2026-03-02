@@ -28,6 +28,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Don't intercept /admin/ or /api/ navigations — let them pass through to the server
+        navigateFallbackDenylist: [/^\/admin/, /^\/api/],
         runtimeCaching: [
           {
             urlPattern: /\/api\/(me|records|purchases|sales-partners|available-records)/,

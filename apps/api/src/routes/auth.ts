@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { prisma } from '@asm-kyc/database';
 import { RegisterInputSchema, LoginInputSchema } from '@asm-kyc/shared';
 import { hashPassword, verifyPassword } from '../lib/password.js';
@@ -13,6 +13,14 @@ const COOKIE_OPTIONS = {
   path: '/',
   maxAge: SESSION_DURATION_MS / 1000,
 };
+
+/**
+ * Admin-web sends X-App: admin header so we use a separate cookie name,
+ * allowing admin and miner/trader sessions to coexist in the same browser.
+ */
+export function getCookieName(request: FastifyRequest): string {
+  return request.headers['x-app'] === 'admin' ? 'admin_session_id' : 'session_id';
+}
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
   // POST /auth/register
@@ -69,7 +77,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       },
     });
 
-    reply.setCookie('session_id', session.id, COOKIE_OPTIONS);
+    const cookieName = getCookieName(request);
+    reply.setCookie(cookieName, session.id, COOKIE_OPTIONS);
 
     return reply.status(201).send({
       id: user.id,
@@ -121,7 +130,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       },
     });
 
-    reply.setCookie('session_id', session.id, COOKIE_OPTIONS);
+    const cookieName = getCookieName(request);
+    reply.setCookie(cookieName, session.id, COOKIE_OPTIONS);
 
     return {
       id: user.id,
@@ -133,11 +143,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /auth/logout
   app.post('/logout', async (request, reply) => {
-    const sessionId = request.cookies.session_id;
+    const cookieName = getCookieName(request);
+    const sessionId = request.cookies[cookieName];
     if (sessionId) {
       await prisma.session.delete({ where: { id: sessionId } }).catch(() => {});
     }
-    reply.clearCookie('session_id', { path: '/' });
+    reply.clearCookie(cookieName, { path: '/' });
     return { ok: true };
   });
 };

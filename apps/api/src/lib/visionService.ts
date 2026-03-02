@@ -67,7 +67,8 @@ Rules:
       ],
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const firstBlock = response.content[0];
+    const text = firstBlock && firstBlock.type === 'text' ? firstBlock.text : '';
     // Extract JSON from response (handle potential markdown wrapping)
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
@@ -134,7 +135,8 @@ Rules:
       ],
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const firstBlock = response.content[0];
+    const text = firstBlock && firstBlock.type === 'text' ? firstBlock.text : '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);

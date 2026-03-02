@@ -1,8 +1,10 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '@asm-kyc/database';
+import { getCookieName } from '../routes/auth.js';
 
 export async function authenticate(request: FastifyRequest, reply: FastifyReply) {
-  const sessionId = request.cookies.session_id;
+  const cookieName = getCookieName(request);
+  const sessionId = request.cookies[cookieName];
 
   if (!sessionId) {
     return reply.status(401).send({
@@ -21,7 +23,7 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
     if (session) {
       await prisma.session.delete({ where: { id: sessionId } }).catch(() => {});
     }
-    reply.clearCookie('session_id', { path: '/' });
+    reply.clearCookie(cookieName, { path: '/' });
     return reply.status(401).send({
       statusCode: 401,
       error: 'Unauthorized',
@@ -30,7 +32,7 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
   }
 
   if (session.user.is_disabled) {
-    reply.clearCookie('session_id', { path: '/' });
+    reply.clearCookie(cookieName, { path: '/' });
     return reply.status(403).send({
       statusCode: 403,
       error: 'Forbidden',

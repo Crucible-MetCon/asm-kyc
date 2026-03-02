@@ -68,6 +68,28 @@ function AppContent() {
     );
   }
 
+  // Admin users should use the admin panel, not the miner PWA
+  if (user.role === 'ADMIN_USER') {
+    return (
+      <div className="screen screen-centered">
+        <div style={{ textAlign: 'center', maxWidth: 360, padding: '0 16px' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🛡️</div>
+          <h1 style={{ color: 'var(--color-gold)', marginBottom: 8 }}>Admin Account</h1>
+          <p style={{ color: 'var(--color-text-secondary)', marginBottom: 24, lineHeight: 1.5 }}>
+            {t.common.adminRedirect || 'This app is for miners and traders. Please use the Admin Panel to manage the system.'}
+          </p>
+          <a
+            href="/admin/"
+            className="btn btn-primary btn-full"
+            style={{ display: 'block', textDecoration: 'none', textAlign: 'center' }}
+          >
+            Go to Admin Panel
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   // Check if profile needs onboarding
   const needsOnboarding = !user.profile?.profile_completed_at;
 

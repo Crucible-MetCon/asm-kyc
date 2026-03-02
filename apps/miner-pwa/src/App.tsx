@@ -69,6 +69,9 @@ function AppContent() {
   }
 
   // Admin users should use the admin panel, not the miner PWA
+  // In dev mode, admin-web runs on port 5174; in production it's at /admin/ on the same host
+  const adminPanelUrl = import.meta.env.DEV ? 'http://127.0.0.1:5174/admin/' : '/admin/';
+
   if (user.role === 'ADMIN_USER') {
     return (
       <div className="screen screen-centered">
@@ -79,7 +82,7 @@ function AppContent() {
             {t.common.adminRedirect || 'This app is for miners and traders. Please use the Admin Panel to manage the system.'}
           </p>
           <a
-            href="/admin/"
+            href={adminPanelUrl}
             className="btn btn-primary btn-full"
             style={{ display: 'block', textDecoration: 'none', textAlign: 'center' }}
           >

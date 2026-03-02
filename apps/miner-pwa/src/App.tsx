@@ -36,7 +36,7 @@ function I18nWrapper({ children }: { children: ReactNode }) {
 }
 
 function AppContent() {
-  const { user, loading, refreshUser } = useAuth();
+  const { user, loading, refreshUser, logout } = useAuth();
   const { t } = useI18n();
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
   const [appScreen, setAppScreen] = useState<AppScreen>('home');
@@ -88,6 +88,14 @@ function AppContent() {
           >
             Go to Admin Panel
           </a>
+          <button
+            type="button"
+            className="btn btn-text"
+            style={{ marginTop: 16, width: '100%' }}
+            onClick={() => logout()}
+          >
+            Sign out and switch account
+          </button>
         </div>
       </div>
     );

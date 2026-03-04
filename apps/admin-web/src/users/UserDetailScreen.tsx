@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
-import type { AdminUserDetail } from '@asm-kyc/shared';
+import type { AdminUserDetail, DocumentResponse } from '@asm-kyc/shared';
+import { DOCUMENT_TYPES } from '@asm-kyc/shared';
 import { RiskBadge } from './RiskBadge';
 
 interface UserDetailScreenProps {
@@ -10,6 +11,7 @@ interface UserDetailScreenProps {
 
 export function UserDetailScreen({ userId, onBack }: UserDetailScreenProps) {
   const [user, setUser] = useState<AdminUserDetail | null>(null);
+  const [documents, setDocuments] = useState<DocumentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
 
@@ -18,6 +20,15 @@ export function UserDetailScreen({ userId, onBack }: UserDetailScreenProps) {
     try {
       const res = await apiFetch<AdminUserDetail>(`/admin/users/${userId}`);
       setUser(res);
+      // Load documents for non-admin users
+      if (res.role !== 'ADMIN_USER') {
+        try {
+          const docRes = await apiFetch<{ documents: DocumentResponse[] }>(`/admin/users/${userId}/documents`);
+          setDocuments(docRes.documents);
+        } catch {
+          // ignore — documents may not exist
+        }
+      }
     } catch {
       // ignore
     } finally {
@@ -55,7 +66,16 @@ export function UserDetailScreen({ userId, onBack }: UserDetailScreenProps) {
     MINER_USER: 'Miner',
     TRADER_USER: 'Trader',
     REFINER_USER: 'Refiner',
+    AGGREGATOR_USER: 'Aggregator',
+    MELTER_USER: 'Melter',
     ADMIN_USER: 'Admin',
+  };
+
+  const docTypeLabels: Record<string, string> = {
+    NRC: 'National Registration Card',
+    MINING_LICENSE: 'Mining License',
+    PASSPORT: 'Passport',
+    COOPERATIVE_CERT: 'Cooperative Certificate',
   };
 
   return (
@@ -252,6 +272,71 @@ export function UserDetailScreen({ userId, onBack }: UserDetailScreenProps) {
           <p style={{ color: '#6b7280', marginTop: 8 }}>No risk flags triggered.</p>
         )}
       </div>
+
+      {user.role !== 'ADMIN_USER' && (
+        <div className="card">
+          <h2 className="card-title">Documents</h2>
+          {documents.length === 0 ? (
+            <p style={{ color: '#6b7280' }}>No documents uploaded.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {DOCUMENT_TYPES.map((docType) => {
+                const doc = documents.find((d) => d.doc_type === docType);
+                return (
+                  <div
+                    key={docType}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: 12,
+                      border: doc ? '1px solid #16a34a' : '1px solid #e5e7eb',
+                      borderRadius: 8,
+                      background: doc ? '#f0fdf4' : '#fafafa',
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>
+                        {docTypeLabels[docType] ?? docType}
+                      </div>
+                      {doc ? (
+                        <>
+                          <div style={{ fontSize: 12, color: '#16a34a', marginTop: 2 }}>
+                            Uploaded · AI confidence: {doc.ai_confidence || 'N/A'}
+                          </div>
+                          {doc.ai_extracted && (
+                            <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>
+                              {Object.entries(doc.ai_extracted)
+                                .filter(([, v]) => v)
+                                .map(([k, v]) => (
+                                  <span key={k} style={{ marginRight: 12 }}>
+                                    <strong>{k}:</strong> {String(v)}
+                                  </span>
+                                ))}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>Not uploaded</div>
+                      )}
+                    </div>
+                    {doc?.file_url && (
+                      <a
+                        href={doc.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-secondary btn-sm"
+                      >
+                        View
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

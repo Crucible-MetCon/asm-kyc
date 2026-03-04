@@ -19,6 +19,8 @@ async function main() {
   const minerHash = await hash('miner123');
   const traderHash = await hash('trader123');
   const refinerHash = await hash('refiner123');
+  const aggregatorHash = await hash('aggregator123');
+  const melterHash = await hash('melter123');
 
   await prisma.user.upsert({
     where: { username: 'admin' },
@@ -148,6 +150,80 @@ async function main() {
       },
     });
     console.log('  Created missing refiner1 profile');
+  }
+
+  // Aggregator user
+  const aggregator1User = await prisma.user.upsert({
+    where: { username: 'aggregator1' },
+    update: {},
+    create: {
+      username: 'aggregator1',
+      phone_e164: '+260600000006',
+      password_hash: aggregatorHash,
+      role: 'AGGREGATOR_USER',
+      miner_profile: {
+        create: {
+          full_name: 'Copperbelt Aggregators Ltd',
+          counterparty_type: 'TRADER_AGGREGATOR',
+          home_language: 'en',
+          profile_completed_at: new Date(),
+        },
+      },
+    },
+  });
+
+  // Ensure aggregator has a profile
+  const aggregatorProfile = await prisma.minerProfile.findUnique({
+    where: { user_id: aggregator1User.id },
+  });
+  if (!aggregatorProfile) {
+    await prisma.minerProfile.create({
+      data: {
+        user_id: aggregator1User.id,
+        full_name: 'Copperbelt Aggregators Ltd',
+        counterparty_type: 'TRADER_AGGREGATOR',
+        home_language: 'en',
+        profile_completed_at: new Date(),
+      },
+    });
+    console.log('  Created missing aggregator1 profile');
+  }
+
+  // Melter user
+  const melter1User = await prisma.user.upsert({
+    where: { username: 'melter1' },
+    update: {},
+    create: {
+      username: 'melter1',
+      phone_e164: '+260600000007',
+      password_hash: melterHash,
+      role: 'MELTER_USER',
+      miner_profile: {
+        create: {
+          full_name: 'Lusaka Gold Smelters',
+          counterparty_type: 'TRADER_AGGREGATOR',
+          home_language: 'en',
+          profile_completed_at: new Date(),
+        },
+      },
+    },
+  });
+
+  // Ensure melter has a profile
+  const melterProfile = await prisma.minerProfile.findUnique({
+    where: { user_id: melter1User.id },
+  });
+  if (!melterProfile) {
+    await prisma.minerProfile.create({
+      data: {
+        user_id: melter1User.id,
+        full_name: 'Lusaka Gold Smelters',
+        counterparty_type: 'TRADER_AGGREGATOR',
+        home_language: 'en',
+        profile_completed_at: new Date(),
+      },
+    });
+    console.log('  Created missing melter1 profile');
   }
 
   // Sales partner relationships
@@ -551,11 +627,13 @@ Ndasumina ukuti nabelenga no kumfwikisha ifyo fyalembwa, kabili ndasumina pa kut
   console.log('  6 survey definitions seeded');
 
   console.log('Seed complete:');
-  console.log('  admin   / admin123   (ADMIN_USER)');
-  console.log('  miner1  / miner123   (MINER_USER)');
-  console.log('  miner2  / miner123   (MINER_USER)');
-  console.log('  trader1 / trader123  (TRADER_USER)');
-  console.log('  refiner1/ refiner123 (REFINER_USER)');
+  console.log('  admin       / admin123       (ADMIN_USER)');
+  console.log('  miner1      / miner123       (MINER_USER)');
+  console.log('  miner2      / miner123       (MINER_USER)');
+  console.log('  trader1     / trader123      (TRADER_USER)');
+  console.log('  refiner1    / refiner123     (REFINER_USER)');
+  console.log('  aggregator1 / aggregator123  (AGGREGATOR_USER)');
+  console.log('  melter1     / melter123      (MELTER_USER)');
   console.log('  consent v1.0 (en + bem)');
   console.log('  5 sample records (3 submitted, 1 draft, 1 purchased)');
   console.log('  1 sample purchase (trader1 → miner2 record) with payment data');

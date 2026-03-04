@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
-export const RoleEnum = z.enum(['MINER_USER', 'TRADER_USER', 'REFINER_USER', 'ADMIN_USER']);
+export const RoleEnum = z.enum(['MINER_USER', 'TRADER_USER', 'REFINER_USER', 'AGGREGATOR_USER', 'MELTER_USER', 'ADMIN_USER']);
 
 /** Roles that can be selected during self-registration (no admin) */
-export const RegistrationRoleEnum = z.enum(['MINER_USER', 'TRADER_USER', 'REFINER_USER']);
+export const RegistrationRoleEnum = z.enum(['MINER_USER', 'TRADER_USER', 'REFINER_USER', 'AGGREGATOR_USER', 'MELTER_USER']);
 
 export const CounterpartyTypeEnum = z.enum([
   'INDIVIDUAL_ASM',

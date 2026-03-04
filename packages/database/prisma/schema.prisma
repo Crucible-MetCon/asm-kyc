@@ -12,6 +12,8 @@ enum Role {
   MINER_USER
   TRADER_USER
   REFINER_USER
+  AGGREGATOR_USER
+  MELTER_USER
   ADMIN_USER
 }
 
@@ -137,16 +139,24 @@ model PasskeyCredential {
   @@map("passkey_credentials")
 }
 
-// Expanded in Phase 3
+// Expanded in Phase 8: profile document uploads with AI extraction
 model Document {
-  id          String   @id @default(uuid()) @db.Uuid
-  user_id     String   @db.Uuid
-  doc_type    String   @db.VarChar(50)
-  file_path   String   @db.Text
-  uploaded_at DateTime @default(now())
+  id              String   @id @default(uuid()) @db.Uuid
+  user_id         String   @db.Uuid
+  doc_type        String   @db.VarChar(50)
+  file_path       String   @db.Text
+  file_url        String?  @db.Text
+  file_size       Int?
+  mime_type       String?  @db.VarChar(50)
+  ai_extracted    Json?
+  ai_confidence   String?  @db.VarChar(10)
+  ai_raw_response String?  @db.Text
+  uploaded_at     DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@unique([user_id, doc_type])
   @@map("documents")
 }
 
@@ -171,6 +181,17 @@ model Record {
   xrf_photo_mime   String?   @db.VarChar(50)
   gps_latitude     Decimal?  @db.Decimal(10, 7)
   gps_longitude    Decimal?  @db.Decimal(10, 7)
+
+  // Phase 8: R2 photo URLs + AI estimation
+  top_photo_url        String?  @db.Text
+  side_photo_url       String?  @db.Text
+  scale_photo_url      String?  @db.Text
+  xrf_photo_url        String?  @db.Text
+  ai_estimated_weight  Decimal? @db.Decimal(10, 3)
+  ai_estimated_purity  Decimal? @db.Decimal(5, 2)
+  ai_weight_confidence String?  @db.VarChar(10)
+  ai_purity_confidence String?  @db.VarChar(10)
+  ai_estimation_raw    String?  @db.Text
   country          String?   @db.VarChar(100)
   locality         String?   @db.VarChar(500)
   mine_site_id     String?   @db.Uuid
@@ -199,11 +220,13 @@ model Record {
   @@map("records")
 }
 
-// Phase 3: photo evidence stored as base64
+// Phase 3: photo evidence stored as base64 or R2 URL
 model RecordPhoto {
   id         String   @id @default(uuid()) @db.Uuid
   record_id  String   @db.Uuid
-  photo_data String   @db.Text
+  photo_data String?  @db.Text
+  photo_url  String?  @db.Text
+  label      String?  @db.VarChar(50)
   mime_type  String   @default("image/jpeg") @db.VarChar(50)
   taken_at   DateTime @default(now())
 
@@ -371,6 +394,8 @@ model RecordReceipt {
   scale_photo_mime String?  @db.VarChar(50)
   xrf_photo_data   String?  @db.Text
   xrf_photo_mime   String?  @db.VarChar(50)
+  scale_photo_url  String?  @db.Text
+  xrf_photo_url    String?  @db.Text
   gps_latitude     Decimal? @db.Decimal(10, 7)
   gps_longitude    Decimal? @db.Decimal(10, 7)
   country          String?  @db.VarChar(100)

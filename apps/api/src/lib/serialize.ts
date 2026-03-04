@@ -44,7 +44,9 @@ export function serializeProfile(p: MinerProfile | null): UserProfile | null {
 export function serializeRecordPhoto(p: RecordPhoto): RecordPhotoResponse {
   return {
     id: p.id,
-    photo_data: p.photo_data,
+    ...(p.photo_data ? { photo_data: p.photo_data } : {}),
+    ...(p.photo_url ? { photo_url: p.photo_url } : {}),
+    ...(p.label ? { label: p.label } : {}),
     mime_type: p.mime_type,
     taken_at: p.taken_at.toISOString(),
   };
@@ -131,10 +133,17 @@ export function serializeRecord(r: RecordWithRelations): RecordResponse {
     gps_longitude: r.gps_longitude ? Number(r.gps_longitude) : null,
     country: r.country ?? null,
     locality: r.locality ?? null,
-    has_scale_photo: !!r.scale_photo_data,
-    has_xrf_photo: !!r.xrf_photo_data,
+    has_scale_photo: !!(r.scale_photo_data || r.scale_photo_url),
+    has_xrf_photo: !!(r.xrf_photo_data || r.xrf_photo_url),
     metal_purities: (r.metal_purities ?? []).map(serializeMetalPurity),
     receipts: (r.receipts ?? []).map(serializeReceipt),
+    // Phase 8: R2 URLs + AI estimation
+    top_photo_url: r.top_photo_url ?? null,
+    side_photo_url: r.side_photo_url ?? null,
+    ai_estimated_weight: r.ai_estimated_weight ? Number(r.ai_estimated_weight) : null,
+    ai_estimated_purity: r.ai_estimated_purity ? Number(r.ai_estimated_purity) : null,
+    ai_weight_confidence: r.ai_weight_confidence ?? null,
+    ai_purity_confidence: r.ai_purity_confidence ?? null,
   };
 }
 

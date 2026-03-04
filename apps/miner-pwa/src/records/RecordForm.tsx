@@ -5,13 +5,14 @@ import { apiFetch, ApiError, NetworkError } from '../api/client';
 import { useOnlineStatus } from '../offline/connectivity';
 import { enqueueRecordSync } from '../offline/syncQueue';
 import type { DraftRecord } from '../offline/db';
-import { RecordCreateSchema, RecordSubmitSchema } from '@asm-kyc/shared';
+import { RecordCreateSchema, RecordSubmitSchema, MinerRecordSubmitSchema } from '@asm-kyc/shared';
 import type { RecordResponse, RecordPhotoResponse } from '@asm-kyc/shared';
 import { PhotoCapture } from './PhotoCapture';
 import { ScaleCapture } from './components/ScaleCapture';
 import { XrfCapture } from './components/XrfCapture';
 import { MetalPurityTable } from './components/MetalPurityTable';
 import { LocationFields } from './components/LocationFields';
+import { GoldPhotoCapture } from './components/GoldPhotoCapture';
 import type { MineSiteListResponse, SalesPartnerListResponse, MineSiteResponse, SalesPartnerListItem } from '@asm-kyc/shared';
 import rawGoldIcon from '../assets/gold-types/raw-gold.png';
 import barIcon from '../assets/gold-types/bar.png';
@@ -34,6 +35,7 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
   const { t } = useI18n();
   const isOnline = useOnlineStatus();
   const isEdit = !!record;
+  const isMiner = user?.role === 'MINER_USER';
 
   const [form, setForm] = useState({
     weight_grams: record?.weight_grams?.toString() ?? '',
@@ -55,6 +57,19 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [toast, setToast] = useState('');
+
+  // Phase 8: miner 2-photo capture
+  const [topPhotoData, setTopPhotoData] = useState<string | null>(null);
+  const [sidePhotoData, setSidePhotoData] = useState<string | null>(null);
+  const [aiEstimation, setAiEstimation] = useState<{
+    estimated_weight: number | null;
+    estimated_purity: number | null;
+    weight_confidence: string;
+    purity_confidence: string;
+    reference_object: string | null;
+    gps_latitude: number | null;
+    gps_longitude: number | null;
+  } | null>(null);
 
   // Phase 6: enhanced fields
   const [scalePhoto, setScalePhoto] = useState<{ data: string; mime: string } | null>(null);
@@ -129,6 +144,9 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
     mine_site_id: mineSiteId || undefined,
     buyer_id: buyerId || undefined,
     metal_purities: purities.length > 0 ? purities : undefined,
+    // Phase 8: miner 2-photo data
+    top_photo_data: topPhotoData || undefined,
+    side_photo_data: sidePhotoData || undefined,
   });
 
   const handlePhotoAdd = (dataUri: string) => {
@@ -255,17 +273,37 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
   };
 
   const handleSubmit = async () => {
-    // First validate with strict submit schema
     const payload = buildPayload();
-    const parsed = RecordSubmitSchema.safeParse(payload);
-    if (!parsed.success) {
-      const fieldErrors: Record<string, string> = {};
-      parsed.error.issues.forEach((issue) => {
-        const key = issue.path[0]?.toString();
-        if (key) fieldErrors[key] = issue.message;
-      });
-      setErrors(fieldErrors);
-      return;
+
+    // For miners: relaxed validation (AI fills weight/purity)
+    if (isMiner) {
+      const parsed = MinerRecordSubmitSchema.safeParse(payload);
+      if (!parsed.success) {
+        const fieldErrors: Record<string, string> = {};
+        parsed.error.issues.forEach((issue) => {
+          const key = issue.path[0]?.toString();
+          if (key) fieldErrors[key] = issue.message;
+        });
+        setErrors(fieldErrors);
+        return;
+      }
+      // Ensure either AI or manual weight
+      if (!payload.weight_grams) {
+        setErrors({ weight_grams: (t.records as Record<string, string>).minerWeightHint || 'Take photos for AI estimation or enter weight manually' });
+        return;
+      }
+    } else {
+      // Non-miners: strict validation
+      const parsed = RecordSubmitSchema.safeParse(payload);
+      if (!parsed.success) {
+        const fieldErrors: Record<string, string> = {};
+        parsed.error.issues.forEach((issue) => {
+          const key = issue.path[0]?.toString();
+          if (key) fieldErrors[key] = issue.message;
+        });
+        setErrors(fieldErrors);
+        return;
+      }
     }
     setShowConfirm(true);
   };
@@ -362,38 +400,100 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
         {errors.gold_type && <span className="field-error">{errors.gold_type}</span>}
       </div>
 
-      {/* Weight */}
-      <div className="form-group">
-        <label htmlFor="weight_grams">{t.records.weightGrams}</label>
-        <input
-          id="weight_grams"
-          type="number"
-          step="0.001"
-          min="0"
-          className={`form-input${errors.weight_grams ? ' input-error' : ''}`}
-          placeholder={t.records.weightPlaceholder}
-          value={form.weight_grams}
-          onChange={(e) => update('weight_grams', e.target.value)}
+      {/* Miner: 2-photo capture with AI estimation */}
+      {isMiner && (
+        <GoldPhotoCapture
+          recordId={record?.id ?? null}
+          goldType={form.gold_type || 'RAW_GOLD'}
+          onEstimation={(est) => {
+            setAiEstimation(est);
+            if (est.estimated_weight != null) {
+              update('weight_grams', est.estimated_weight.toString());
+            }
+            if (est.estimated_purity != null) {
+              update('estimated_purity', est.estimated_purity.toString());
+            }
+            if (est.gps_latitude != null && !latitude) {
+              setLatitude(est.gps_latitude.toString());
+            }
+            if (est.gps_longitude != null && !longitude) {
+              setLongitude(est.gps_longitude.toString());
+            }
+          }}
+          onPhotos={(top, side) => {
+            setTopPhotoData(top);
+            setSidePhotoData(side);
+          }}
         />
-        {errors.weight_grams && <span className="field-error">{errors.weight_grams}</span>}
-      </div>
+      )}
 
-      {/* Purity */}
-      <div className="form-group">
-        <label htmlFor="estimated_purity">{t.records.estimatedPurity}</label>
-        <input
-          id="estimated_purity"
-          type="number"
-          step="0.01"
-          min="0"
-          max="100"
-          className={`form-input${errors.estimated_purity ? ' input-error' : ''}`}
-          placeholder={t.records.purityPlaceholder}
-          value={form.estimated_purity}
-          onChange={(e) => update('estimated_purity', e.target.value)}
-        />
-        {errors.estimated_purity && <span className="field-error">{errors.estimated_purity}</span>}
-      </div>
+      {/* Miner: show editable weight/purity only after estimation */}
+      {isMiner && aiEstimation && (
+        <>
+          <div className="form-group">
+            <label htmlFor="weight_grams">{t.records.weightGrams} ({t.records.editableEstimate || 'editable'})</label>
+            <input
+              id="weight_grams"
+              type="number"
+              step="0.001"
+              min="0"
+              className={`form-input${errors.weight_grams ? ' input-error' : ''}`}
+              value={form.weight_grams}
+              onChange={(e) => update('weight_grams', e.target.value)}
+            />
+            {errors.weight_grams && <span className="field-error">{errors.weight_grams}</span>}
+          </div>
+          <div className="form-group">
+            <label htmlFor="estimated_purity">{t.records.estimatedPurity} ({t.records.editableEstimate || 'editable'})</label>
+            <input
+              id="estimated_purity"
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              className={`form-input${errors.estimated_purity ? ' input-error' : ''}`}
+              value={form.estimated_purity}
+              onChange={(e) => update('estimated_purity', e.target.value)}
+            />
+            {errors.estimated_purity && <span className="field-error">{errors.estimated_purity}</span>}
+          </div>
+        </>
+      )}
+
+      {/* Non-miner: manual weight & purity inputs */}
+      {!isMiner && (
+        <>
+          <div className="form-group">
+            <label htmlFor="weight_grams">{t.records.weightGrams}</label>
+            <input
+              id="weight_grams"
+              type="number"
+              step="0.001"
+              min="0"
+              className={`form-input${errors.weight_grams ? ' input-error' : ''}`}
+              placeholder={t.records.weightPlaceholder}
+              value={form.weight_grams}
+              onChange={(e) => update('weight_grams', e.target.value)}
+            />
+            {errors.weight_grams && <span className="field-error">{errors.weight_grams}</span>}
+          </div>
+          <div className="form-group">
+            <label htmlFor="estimated_purity">{t.records.estimatedPurity}</label>
+            <input
+              id="estimated_purity"
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              className={`form-input${errors.estimated_purity ? ' input-error' : ''}`}
+              placeholder={t.records.purityPlaceholder}
+              value={form.estimated_purity}
+              onChange={(e) => update('estimated_purity', e.target.value)}
+            />
+            {errors.estimated_purity && <span className="field-error">{errors.estimated_purity}</span>}
+          </div>
+        </>
+      )}
 
       {/* Origin Mine Site */}
       <div className="form-group">
@@ -422,39 +522,42 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
         {errors.extraction_date && <span className="field-error">{errors.extraction_date}</span>}
       </div>
 
-      {/* Scale Photo Capture */}
-      <ScaleCapture
-        onWeightExtracted={(weight, photoData, mimeType) => {
-          setScalePhoto({ data: photoData, mime: mimeType });
-          if (weight != null) {
-            update('weight_grams', weight.toString());
-          }
-        }}
-        onPhotoOnly={(photoData, mimeType) => {
-          setScalePhoto({ data: photoData, mime: mimeType });
-        }}
-      />
-
-      {/* XRF Photo Capture */}
-      <div style={{ marginTop: 16 }}>
-        <XrfCapture
-          onPuritiesExtracted={(extractedPurities, photoData, mimeType) => {
-            setXrfPhoto({ data: photoData, mime: mimeType });
-            setPurities(extractedPurities);
-            // Auto-fill estimated purity from Au reading
-            const au = extractedPurities.find((p) => p.element === 'Au');
-            if (au) {
-              update('estimated_purity', au.purity.toString());
+      {/* Non-miner: Scale Photo Capture */}
+      {!isMiner && (
+        <ScaleCapture
+          onWeightExtracted={(weight, photoData, mimeType) => {
+            setScalePhoto({ data: photoData, mime: mimeType });
+            if (weight != null) {
+              update('weight_grams', weight.toString());
             }
           }}
           onPhotoOnly={(photoData, mimeType) => {
-            setXrfPhoto({ data: photoData, mime: mimeType });
+            setScalePhoto({ data: photoData, mime: mimeType });
           }}
         />
-      </div>
+      )}
 
-      {/* Metal Purities Table */}
-      {(purities.length > 0 || xrfPhoto) && (
+      {/* Non-miner: XRF Photo Capture */}
+      {!isMiner && (
+        <div style={{ marginTop: 16 }}>
+          <XrfCapture
+            onPuritiesExtracted={(extractedPurities, photoData, mimeType) => {
+              setXrfPhoto({ data: photoData, mime: mimeType });
+              setPurities(extractedPurities);
+              const au = extractedPurities.find((p) => p.element === 'Au');
+              if (au) {
+                update('estimated_purity', au.purity.toString());
+              }
+            }}
+            onPhotoOnly={(photoData, mimeType) => {
+              setXrfPhoto({ data: photoData, mime: mimeType });
+            }}
+          />
+        </div>
+      )}
+
+      {/* Non-miner: Metal Purities Table */}
+      {!isMiner && (purities.length > 0 || xrfPhoto) && (
         <div style={{ marginTop: 16 }}>
           <MetalPurityTable purities={purities} onChange={setPurities} />
         </div>

@@ -11,7 +11,9 @@ interface Props {
 const ROLE_OPTIONS = [
   { value: 'MINER_USER', labelKey: 'roleMiner' as const },
   { value: 'TRADER_USER', labelKey: 'roleTrader' as const },
+  { value: 'AGGREGATOR_USER', labelKey: 'roleAggregator' as const },
   { value: 'REFINER_USER', labelKey: 'roleRefiner' as const },
+  { value: 'MELTER_USER', labelKey: 'roleMelter' as const },
 ];
 
 export function RegisterScreen({ onSwitchToLogin }: Props) {

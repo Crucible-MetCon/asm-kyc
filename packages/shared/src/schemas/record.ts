@@ -22,6 +22,9 @@ export const RecordCreateSchema = z.object({
     .or(z.literal('')),
   gold_type: GoldTypeEnum.optional(),
   notes: z.string().max(2000).optional().or(z.literal('')),
+  // Phase 8: miner 2-photo capture (base64 data URIs)
+  top_photo_data: z.string().optional(),
+  side_photo_data: z.string().optional(),
 });
 export type RecordCreate = z.infer<typeof RecordCreateSchema>;
 
@@ -37,6 +40,14 @@ export const RecordSubmitSchema = z.object({
   gold_type: GoldTypeEnum,
 });
 export type RecordSubmit = z.infer<typeof RecordSubmitSchema>;
+
+// Miner submission: AI estimates fill weight/purity, so manual entry not required
+export const MinerRecordSubmitSchema = z.object({
+  gold_type: GoldTypeEnum,
+  origin_mine_site: z.string().min(1, 'Origin mine site is required'),
+  extraction_date: z.string().refine((val) => !isNaN(Date.parse(val)), 'Valid date is required'),
+});
+export type MinerRecordSubmit = z.infer<typeof MinerRecordSubmitSchema>;
 
 // Photo upload validation
 export const RecordPhotoUploadSchema = z.object({

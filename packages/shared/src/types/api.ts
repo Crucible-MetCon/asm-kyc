@@ -33,7 +33,9 @@ export interface ConsentVersionResponse {
 
 export interface RecordPhotoResponse {
   id: string;
-  photo_data: string;
+  photo_data?: string;
+  photo_url?: string;
+  label?: string;
   mime_type: string;
   taken_at: string;
 }
@@ -64,6 +66,13 @@ export interface RecordResponse {
   has_xrf_photo: boolean;
   metal_purities: MetalPurityResponse[];
   receipts: RecordReceiptResponse[];
+  // Phase 8: R2 URLs + AI estimation
+  top_photo_url: string | null;
+  side_photo_url: string | null;
+  ai_estimated_weight: number | null;
+  ai_estimated_purity: number | null;
+  ai_weight_confidence: string | null;
+  ai_purity_confidence: string | null;
 }
 
 export interface RecordListItem {
@@ -200,6 +209,8 @@ export interface AdminDashboardStats {
   total_miners: number;
   total_traders: number;
   total_refiners: number;
+  total_aggregators: number;
+  total_melters: number;
   total_records: number;
   records_by_status: { status: string; count: number }[];
   total_purchases: number;
@@ -448,4 +459,39 @@ export interface AdminSurveyStatsResponse {
 export interface AdminSurveyListResponse {
   surveys: AdminSurveyStatsResponse[];
   total_miners: number;
+}
+
+// Phase 8: Vision estimation types
+export interface VisionEstimationResult {
+  estimated_weight: number | null;
+  estimated_purity: number | null;
+  weight_confidence: string;
+  purity_confidence: string;
+  reference_object: string | null;
+  gps_latitude: number | null;
+  gps_longitude: number | null;
+  raw_description: string;
+}
+
+// Phase 8: Document types
+export interface DocumentResponse {
+  id: string;
+  doc_type: string;
+  file_url: string | null;
+  file_size: number | null;
+  mime_type: string | null;
+  ai_extracted: Record<string, unknown> | null;
+  ai_confidence: string | null;
+  uploaded_at: string;
+}
+
+export interface DocumentListResponse {
+  documents: DocumentResponse[];
+  slots: string[];
+}
+
+export interface DocumentExtractionResult {
+  fields: Record<string, string | null>;
+  confidence: string;
+  raw_description: string;
 }

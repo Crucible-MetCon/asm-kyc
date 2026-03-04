@@ -1,4 +1,4 @@
-export const ROLES = ['MINER_USER', 'TRADER_USER', 'REFINER_USER', 'ADMIN_USER'] as const;
+export const ROLES = ['MINER_USER', 'TRADER_USER', 'REFINER_USER', 'AGGREGATOR_USER', 'MELTER_USER', 'ADMIN_USER'] as const;
 export type Role = (typeof ROLES)[number];
 
 export const COUNTERPARTY_TYPES = [
@@ -46,3 +46,7 @@ export type SurveyRewardStatus = (typeof SURVEY_REWARD_STATUSES)[number];
 
 export const RISK_LEVELS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 export type RiskLevel = (typeof RISK_LEVELS)[number];
+
+// Phase 8: Document types
+export const DOCUMENT_TYPES = ['NRC', 'MINING_LICENSE', 'PASSPORT', 'COOPERATIVE_CERT'] as const;
+export type DocumentType = (typeof DOCUMENT_TYPES)[number];

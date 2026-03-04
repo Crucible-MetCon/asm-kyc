@@ -28,10 +28,12 @@ export {
   RecordCreateSchema,
   RecordUpdateSchema,
   RecordSubmitSchema,
+  MinerRecordSubmitSchema,
   RecordPhotoUploadSchema,
   type RecordCreate,
   type RecordUpdate,
   type RecordSubmit,
+  type MinerRecordSubmit,
   type RecordPhotoUpload,
 } from './schemas/record.js';
 
@@ -104,6 +106,10 @@ export {
   type RiskAssessmentResponse,
   type AdminSurveyStatsResponse,
   type AdminSurveyListResponse,
+  type VisionEstimationResult,
+  type DocumentResponse,
+  type DocumentListResponse,
+  type DocumentExtractionResult,
 } from './types/api.js';
 
 export {
@@ -133,8 +139,10 @@ export {
   type VisionConfidence,
   SURVEY_REWARD_STATUSES,
   RISK_LEVELS,
+  DOCUMENT_TYPES,
   type SurveyRewardStatus,
   type RiskLevel,
+  type DocumentType,
 } from './constants.js';
 
 // Phase 7: Survey question definitions & risk rules

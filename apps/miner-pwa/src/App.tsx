@@ -48,7 +48,8 @@ function AppContent() {
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
   const [selectedSurveySlug, setSelectedSurveySlug] = useState<string | null>(null);
 
-  const isTraderOrRefiner = user?.role === 'TRADER_USER' || user?.role === 'REFINER_USER';
+  const isTraderOrRefiner = user?.role === 'TRADER_USER' || user?.role === 'REFINER_USER'
+    || user?.role === 'AGGREGATOR_USER' || user?.role === 'MELTER_USER';
   const isMiner = user?.role === 'MINER_USER';
 
   // Initialize sync engine when user is logged in

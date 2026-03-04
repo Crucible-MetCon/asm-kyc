@@ -2,6 +2,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useI18n, interpolate, type Language } from '../i18n/I18nContext';
 import { apiFetch } from '../api/client';
 import type { UserProfile } from '@asm-kyc/shared';
+import { DocumentUpload } from './DocumentUpload';
 
 interface Props {
   onEdit: () => void;
@@ -161,6 +162,8 @@ export function ProfileScreen({ onEdit, onManageSites }: Props) {
           <div className="consent-badge consent-pending">{t.profile.incomplete}</div>
         )}
       </div>
+
+      <DocumentUpload />
 
       <button className="btn btn-primary btn-full" onClick={onEdit} style={{ marginTop: 24 }}>
         {t.profile.editProfile}

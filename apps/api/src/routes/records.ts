@@ -4,6 +4,7 @@ import {
   RecordCreateSchema,
   RecordUpdateSchema,
   RecordSubmitSchema,
+  MinerRecordSubmitSchema,
   RecordPhotoUploadSchema,
 } from '@asm-kyc/shared';
 import { authenticate } from '../middleware/auth.js';
@@ -14,6 +15,12 @@ import {
   serializeRecordPhoto,
   serializeAvailableRecord,
 } from '../lib/serialize.js';
+import { estimateFromPhotos } from '../lib/visionService.js';
+import {
+  uploadToR2,
+  base64ToBuffer,
+  buildRecordPhotoKey,
+} from '../lib/r2Client.js';
 
 // Include relations needed for full record serialization
 const RECORD_FULL_INCLUDE = {
@@ -48,9 +55,9 @@ async function generateRecordNumber(): Promise<string> {
 export const recordRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', authenticate);
 
-  // POST /records — create a new draft
+  // POST /records — create a new draft (all non-admin roles)
   app.post('/', {
-    preHandler: [requireRole('MINER_USER')],
+    preHandler: [requireRole('MINER_USER', 'TRADER_USER', 'AGGREGATOR_USER', 'REFINER_USER', 'MELTER_USER')],
     handler: async (request, reply) => {
       const parsed = RecordCreateSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -121,7 +128,7 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
   // GET /records/available — list SUBMITTED records for traders/refiners
   // Only shows records from miners who have this trader/refiner as a sales partner
   app.get('/available', {
-    preHandler: [requireRole('TRADER_USER', 'REFINER_USER')],
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER', 'AGGREGATOR_USER', 'MELTER_USER')],
     handler: async (request, reply) => {
       const user = request.user!;
 
@@ -304,21 +311,49 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
     }
 
     // Validate that all required fields are present
-    const submitData = {
-      weight_grams: existing.weight_grams ? Number(existing.weight_grams) : undefined,
-      estimated_purity: existing.estimated_purity ? Number(existing.estimated_purity) : undefined,
-      origin_mine_site: existing.origin_mine_site ?? undefined,
-      extraction_date: existing.extraction_date?.toISOString() ?? undefined,
-      gold_type: existing.gold_type ?? undefined,
-    };
+    // For miners: AI estimates fill weight/purity, so use relaxed schema
+    const isMiner = user.role === 'MINER_USER';
 
-    const submitCheck = RecordSubmitSchema.safeParse(submitData);
-    if (!submitCheck.success) {
-      return reply.status(400).send({
-        statusCode: 400,
-        error: 'Incomplete Record',
-        message: submitCheck.error.issues,
-      });
+    if (isMiner) {
+      // Miners need gold_type, origin, and date — weight/purity come from AI or manual
+      const minerSubmitData = {
+        gold_type: existing.gold_type ?? undefined,
+        origin_mine_site: existing.origin_mine_site ?? undefined,
+        extraction_date: existing.extraction_date?.toISOString() ?? undefined,
+      };
+      const minerCheck = MinerRecordSubmitSchema.safeParse(minerSubmitData);
+      if (!minerCheck.success) {
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Incomplete Record',
+          message: minerCheck.error.issues,
+        });
+      }
+      // Miners must have either manual or AI weight
+      const hasWeight = existing.weight_grams || existing.ai_estimated_weight;
+      if (!hasWeight) {
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Incomplete Record',
+          message: 'Weight is required — take photos for AI estimation or enter manually',
+        });
+      }
+    } else {
+      const submitData = {
+        weight_grams: existing.weight_grams ? Number(existing.weight_grams) : undefined,
+        estimated_purity: existing.estimated_purity ? Number(existing.estimated_purity) : undefined,
+        origin_mine_site: existing.origin_mine_site ?? undefined,
+        extraction_date: existing.extraction_date?.toISOString() ?? undefined,
+        gold_type: existing.gold_type ?? undefined,
+      };
+      const submitCheck = RecordSubmitSchema.safeParse(submitData);
+      if (!submitCheck.success) {
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Incomplete Record',
+          message: submitCheck.error.issues,
+        });
+      }
     }
 
     const record = await prisma.record.update({
@@ -328,6 +363,97 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
     });
 
     return reply.send(serializeRecord(record));
+  });
+
+  // POST /records/:id/estimate — run AI estimation from 2 photos (miner only)
+  app.post<{ Params: { id: string } }>('/:id/estimate', {
+    preHandler: [requireRole('MINER_USER')],
+    handler: async (request, reply) => {
+      const user = request.user!;
+      const body = request.body as {
+        top_photo: string;
+        side_photo: string;
+        gold_type: string;
+      };
+
+      if (!body.top_photo || !body.side_photo) {
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Validation Error',
+          message: 'top_photo and side_photo are required (base64)',
+        });
+      }
+
+      const existing = await prisma.record.findUnique({ where: { id: request.params.id } });
+      if (!existing) {
+        return reply.status(404).send({ statusCode: 404, error: 'Not Found', message: 'Record not found' });
+      }
+      if (existing.created_by !== user.id) {
+        return reply.status(403).send({ statusCode: 403, error: 'Forbidden', message: 'Not your record' });
+      }
+      if (existing.status !== 'DRAFT') {
+        return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: 'Cannot estimate on submitted record' });
+      }
+
+      // Upload photos to R2 if configured
+      const topParsed = base64ToBuffer(body.top_photo);
+      const sideParsed = base64ToBuffer(body.side_photo);
+      const topKey = buildRecordPhotoKey(user.id, existing.id, 'top.jpg');
+      const sideKey = buildRecordPhotoKey(user.id, existing.id, 'side.jpg');
+
+      const topUrl = await uploadToR2(topKey, topParsed.buffer, topParsed.mimeType);
+      const sideUrl = await uploadToR2(sideKey, sideParsed.buffer, sideParsed.mimeType);
+
+      // Run AI estimation
+      const estimation = await estimateFromPhotos(
+        body.top_photo,
+        body.side_photo,
+        body.gold_type || 'RAW_GOLD',
+      );
+
+      // Update record with estimation results + photo keys
+      const record = await prisma.record.update({
+        where: { id: existing.id },
+        data: {
+          top_photo_url: topUrl,
+          side_photo_url: sideUrl,
+          ai_estimated_weight: estimation.estimated_weight,
+          ai_estimated_purity: estimation.estimated_purity,
+          ai_weight_confidence: estimation.weight_confidence,
+          ai_purity_confidence: estimation.purity_confidence,
+          ai_estimation_raw: estimation.raw_description,
+          // Pre-fill GPS from EXIF if available and not already set
+          ...(estimation.gps_latitude && !existing.gps_latitude
+            ? { gps_latitude: estimation.gps_latitude }
+            : {}),
+          ...(estimation.gps_longitude && !existing.gps_longitude
+            ? { gps_longitude: estimation.gps_longitude }
+            : {}),
+          // If no manual weight/purity, use AI estimates
+          ...(!existing.weight_grams && estimation.estimated_weight
+            ? { weight_grams: estimation.estimated_weight }
+            : {}),
+          ...(!existing.estimated_purity && estimation.estimated_purity
+            ? { estimated_purity: estimation.estimated_purity }
+            : {}),
+        },
+        include: RECORD_FULL_INCLUDE,
+      });
+
+      return reply.send({
+        record: serializeRecord(record),
+        estimation: {
+          estimated_weight: estimation.estimated_weight,
+          estimated_purity: estimation.estimated_purity,
+          weight_confidence: estimation.weight_confidence,
+          purity_confidence: estimation.purity_confidence,
+          reference_object: estimation.reference_object,
+          gps_latitude: estimation.gps_latitude,
+          gps_longitude: estimation.gps_longitude,
+          raw_description: estimation.raw_description,
+        },
+      });
+    },
   });
 
   // POST /records/:id/photos — upload a photo

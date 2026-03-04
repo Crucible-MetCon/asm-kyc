@@ -417,6 +417,8 @@ body {
 .role-tag-miner { background: #dbeafe; color: #1d4ed8; }
 .role-tag-trader { background: #fef3c7; color: #92400e; }
 .role-tag-refiner { background: #f3e8ff; color: #7c3aed; }
+.role-tag-aggregator { background: #d1fae5; color: #065f46; }
+.role-tag-melter { background: #ffedd5; color: #9a3412; }
 .role-tag-admin { background: #fee2e2; color: #dc2626; }
 
 /* ─── Cards ─── */

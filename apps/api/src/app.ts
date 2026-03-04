@@ -18,6 +18,7 @@ import { mineSiteRoutes } from './routes/mine-sites.js';
 import { visionRoutes } from './routes/vision.js';
 import { receiptRoutes } from './routes/receipts.js';
 import { surveyRoutes } from './routes/surveys.js';
+import { documentRoutes } from './routes/documents.js';
 import { featureFlags } from './lib/featureFlags.js';
 
 export async function buildApp() {
@@ -60,6 +61,7 @@ export async function buildApp() {
       await api.register(visionRoutes, { prefix: '/vision' });
       await api.register(receiptRoutes, { prefix: '/records' });
       await api.register(surveyRoutes, { prefix: '/surveys' });
+      await api.register(documentRoutes, { prefix: '/documents' });
       await api.register(adminRoutes, { prefix: '/admin' });
 
       // Webhook routes: no auth middleware (verified by signature)

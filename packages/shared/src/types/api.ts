@@ -222,6 +222,9 @@ export interface AdminUserListItem {
   profile_completed: boolean;
   consented: boolean;
   created_at: string;
+  // Phase 7
+  survey_count: number;
+  risk_level: string;
 }
 
 export interface AdminUserListResponse {
@@ -240,6 +243,10 @@ export interface AdminUserDetail {
   profile: UserProfile | null;
   record_count: number;
   purchase_count: number;
+  // Phase 7
+  survey_count: number;
+  risk_level: string;
+  risk_flags: RiskFlagResponse[];
 }
 
 export interface AdminRecordListItem {
@@ -373,4 +380,72 @@ export interface VisionXrfResult {
   purities: { element: string; purity: number }[];
   confidence: string;
   raw_description: string;
+}
+
+// Phase 7: Survey types
+
+export interface SurveyDefinitionResponse {
+  id: string;
+  slug: string;
+  display_order: number;
+  reward_amount: number;
+  reward_currency: string;
+  is_active: boolean;
+}
+
+export interface SurveyStatusResponse {
+  survey: SurveyDefinitionResponse;
+  completed: boolean;
+  completed_at: string | null;
+  reward_status: string | null;
+  reward_amount: number | null;
+}
+
+export interface SurveyListResponse {
+  surveys: SurveyStatusResponse[];
+  total_earned: number;
+  total_available: number;
+}
+
+export interface SurveyAnswerResponse {
+  question_id: string;
+  answer: unknown;
+}
+
+export interface SurveyResponseDetail {
+  id: string;
+  survey_slug: string;
+  completed_at: string;
+  answers: SurveyAnswerResponse[];
+  reward_amount: number | null;
+  reward_status: string | null;
+}
+
+export interface RiskFlagResponse {
+  survey_slug: string;
+  question_id: string;
+  severity: string;
+  label_key: string;
+}
+
+export interface RiskAssessmentResponse {
+  level: string;
+  flags: RiskFlagResponse[];
+}
+
+export interface AdminSurveyStatsResponse {
+  id: string;
+  slug: string;
+  display_order: number;
+  reward_amount: number;
+  reward_currency: string;
+  is_active: boolean;
+  completion_count: number;
+  completion_percentage: number;
+  total_rewards_paid: number;
+}
+
+export interface AdminSurveyListResponse {
+  surveys: AdminSurveyStatsResponse[];
+  total_miners: number;
 }

@@ -39,3 +39,10 @@ export type MetalElement = (typeof METAL_ELEMENTS)[number];
 
 export const VISION_CONFIDENCE = ['high', 'medium', 'low'] as const;
 export type VisionConfidence = (typeof VISION_CONFIDENCE)[number];
+
+// Phase 7: Survey & Risk constants
+export const SURVEY_REWARD_STATUSES = ['PENDING', 'PAID', 'FAILED'] as const;
+export type SurveyRewardStatus = (typeof SURVEY_REWARD_STATUSES)[number];
+
+export const RISK_LEVELS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
+export type RiskLevel = (typeof RISK_LEVELS)[number];

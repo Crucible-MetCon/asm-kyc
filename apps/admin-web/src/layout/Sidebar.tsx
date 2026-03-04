@@ -6,7 +6,8 @@ export type AdminScreen =
   | 'user-detail'
   | 'records'
   | 'record-detail'
-  | 'compliance';
+  | 'compliance'
+  | 'surveys';
 
 interface SidebarProps {
   screen: AdminScreen;
@@ -18,6 +19,7 @@ const navItems: { screen: AdminScreen; label: string; icon: string }[] = [
   { screen: 'users', label: 'Users', icon: '👥' },
   { screen: 'records', label: 'Records', icon: '📋' },
   { screen: 'compliance', label: 'Compliance', icon: '✅' },
+  { screen: 'surveys', label: 'Surveys', icon: '📝' },
 ];
 
 export function Sidebar({ screen, onNavigate }: SidebarProps) {

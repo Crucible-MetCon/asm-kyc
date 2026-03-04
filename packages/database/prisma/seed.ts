@@ -526,6 +526,30 @@ Ndasumina ukuti nabelenga no kumfwikisha ifyo fyalembwa, kabili ndasumina pa kut
     console.log('  Skipped Phase 6 Part C seed:', err instanceof Error ? err.message : 'unknown error');
   }
 
+  // Phase 7: KYC Survey definitions
+  const surveyDefs = [
+    { slug: 'about-you', display_order: 1, reward_amount: 2.00 },
+    { slug: 'mining-operation', display_order: 2, reward_amount: 3.00 },
+    { slug: 'environmental-practices', display_order: 3, reward_amount: 3.00 },
+    { slug: 'safety-rights', display_order: 4, reward_amount: 3.00 },
+    { slug: 'gold-journey', display_order: 5, reward_amount: 2.50 },
+    { slug: 'governance-compliance', display_order: 6, reward_amount: 2.50 },
+  ];
+
+  for (const def of surveyDefs) {
+    await prisma.surveyDefinition.upsert({
+      where: { slug: def.slug },
+      update: { display_order: def.display_order },
+      create: {
+        slug: def.slug,
+        display_order: def.display_order,
+        reward_amount: def.reward_amount,
+        reward_currency: 'USD',
+      },
+    });
+  }
+  console.log('  6 survey definitions seeded');
+
   console.log('Seed complete:');
   console.log('  admin   / admin123   (ADMIN_USER)');
   console.log('  miner1  / miner123   (MINER_USER)');
@@ -535,6 +559,7 @@ Ndasumina ukuti nabelenga no kumfwikisha ifyo fyalembwa, kabili ndasumina pa kut
   console.log('  consent v1.0 (en + bem)');
   console.log('  5 sample records (3 submitted, 1 draft, 1 purchased)');
   console.log('  1 sample purchase (trader1 → miner2 record) with payment data');
+  console.log('  6 KYC survey definitions ($16 total rewards)');
   console.log('  Sales partners:');
   console.log('    miner1 → trader1, refiner1');
   console.log('    miner2 → trader1');

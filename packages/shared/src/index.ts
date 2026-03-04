@@ -52,6 +52,13 @@ export {
 } from './schemas/compliance.js';
 
 export {
+  SurveySubmitSchema,
+  SurveyRewardUpdateSchema,
+  type SurveySubmitInput,
+  type SurveyRewardUpdateInput,
+} from './schemas/survey.js';
+
+export {
   type ApiError,
   type MeResponse,
   type UserProfile,
@@ -88,6 +95,15 @@ export {
   type RecordReceiptResponse,
   type VisionWeightResult,
   type VisionXrfResult,
+  type SurveyDefinitionResponse,
+  type SurveyStatusResponse,
+  type SurveyListResponse,
+  type SurveyAnswerResponse,
+  type SurveyResponseDetail,
+  type RiskFlagResponse,
+  type RiskAssessmentResponse,
+  type AdminSurveyStatsResponse,
+  type AdminSurveyListResponse,
 } from './types/api.js';
 
 export {
@@ -115,4 +131,28 @@ export {
   VISION_CONFIDENCE,
   type MetalElement,
   type VisionConfidence,
+  SURVEY_REWARD_STATUSES,
+  RISK_LEVELS,
+  type SurveyRewardStatus,
+  type RiskLevel,
 } from './constants.js';
+
+// Phase 7: Survey question definitions & risk rules
+export {
+  SURVEY_DEFINITIONS,
+  getSurveyBySlug,
+  getVisibleQuestions,
+  type QuestionType,
+  type QuestionOption,
+  type SurveyQuestionDef,
+  type SurveyDef,
+} from './surveys/questions.js';
+
+export {
+  RISK_FLAGS,
+  evaluateRisk,
+  type RiskFlagDef,
+  type RiskSeverity,
+  type TriggeredFlag,
+  type RiskLevel as RiskLevelType,
+} from './surveys/risk.js';

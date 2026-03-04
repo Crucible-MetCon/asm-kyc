@@ -62,6 +62,12 @@ export function HomeScreen({ onNavigate }: Props) {
           onClick={() => onNavigate('records')}
         />
         <PlaceholderCard
+          title={t.surveys.title}
+          icon="📝"
+          subtitle={t.surveys.subtitle}
+          onClick={() => onNavigate('surveys')}
+        />
+        <PlaceholderCard
           title={t.salesPartners.managePartners}
           icon="🤝"
           subtitle={t.salesPartners.managePartnersSubtitle}

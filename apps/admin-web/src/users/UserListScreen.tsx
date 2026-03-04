@@ -4,6 +4,7 @@ import type { AdminUserListResponse, AdminUserListItem } from '@asm-kyc/shared';
 import { StatusBadge } from '../components/StatusBadge';
 import { Pagination } from '../components/Pagination';
 import { SearchInput } from '../components/SearchInput';
+import { RiskBadge } from './RiskBadge';
 
 interface UserListScreenProps {
   onSelectUser: (id: string) => void;
@@ -93,6 +94,7 @@ export function UserListScreen({ onSelectUser }: UserListScreenProps) {
                 <th>Phone</th>
                 <th>Status</th>
                 <th>KYC</th>
+                <th>Risk</th>
                 <th>Registered</th>
               </tr>
             </thead>
@@ -117,6 +119,7 @@ export function UserListScreen({ onSelectUser }: UserListScreenProps) {
                       <span className="badge badge-draft">Incomplete</span>
                     )}
                   </td>
+                  <td><RiskBadge level={u.risk_level} /></td>
                   <td>{new Date(u.created_at).toLocaleDateString()}</td>
                 </tr>
               ))}

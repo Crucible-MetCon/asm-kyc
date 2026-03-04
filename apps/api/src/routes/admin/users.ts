@@ -1,7 +1,40 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { prisma } from '@asm-kyc/database';
-import type { AdminUserListItem, AdminUserDetail } from '@asm-kyc/shared';
+import type { AdminUserListItem, AdminUserDetail, RiskFlagResponse } from '@asm-kyc/shared';
+import { evaluateRisk, SURVEY_DEFINITIONS } from '@asm-kyc/shared';
 import { serializeProfile } from '../../lib/serialize.js';
+
+/** Compute risk assessment for a user from their survey responses */
+async function getUserRisk(userId: string): Promise<{ level: string; flags: RiskFlagResponse[] }> {
+  const responses = await prisma.surveyResponse.findMany({
+    where: { user_id: userId },
+    include: {
+      survey: true,
+      answers: true,
+    },
+  });
+
+  // Build answersBySlug for risk evaluation
+  const answersBySlug: Record<string, Record<string, unknown>> = {};
+  for (const resp of responses) {
+    const slug = resp.survey.slug;
+    answersBySlug[slug] = {};
+    for (const a of resp.answers) {
+      answersBySlug[slug][a.question_id] = a.answer;
+    }
+  }
+
+  const result = evaluateRisk(answersBySlug);
+  return {
+    level: result.level,
+    flags: result.flags.map((f) => ({
+      survey_slug: f.surveySlug,
+      question_id: f.questionId,
+      severity: f.severity,
+      label_key: f.labelKey,
+    })),
+  };
+}
 
 export const adminUserRoutes: FastifyPluginAsync = async (app) => {
   // GET /api/admin/users — paginated user list
@@ -23,7 +56,12 @@ export const adminUserRoutes: FastifyPluginAsync = async (app) => {
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
-        include: { miner_profile: true },
+        include: {
+          miner_profile: true,
+          survey_responses: {
+            include: { survey: true, answers: true },
+          },
+        },
         orderBy: { created_at: 'desc' },
         skip,
         take: limitNum,
@@ -31,17 +69,32 @@ export const adminUserRoutes: FastifyPluginAsync = async (app) => {
       prisma.user.count({ where }),
     ]);
 
-    const items: AdminUserListItem[] = users.map((u) => ({
-      id: u.id,
-      username: u.username,
-      role: u.role,
-      phone_e164: u.phone_e164,
-      is_disabled: u.is_disabled,
-      profile_name: u.miner_profile?.full_name ?? null,
-      profile_completed: !!u.miner_profile?.profile_completed_at,
-      consented: !!u.miner_profile?.consented_at,
-      created_at: u.created_at.toISOString(),
-    }));
+    const items: AdminUserListItem[] = users.map((u) => {
+      // Build risk from inline survey data
+      const answersBySlug: Record<string, Record<string, unknown>> = {};
+      for (const resp of u.survey_responses) {
+        const slugAnswers: Record<string, unknown> = {};
+        for (const a of resp.answers) {
+          slugAnswers[a.question_id] = a.answer;
+        }
+        answersBySlug[resp.survey.slug] = slugAnswers;
+      }
+      const risk = evaluateRisk(answersBySlug);
+
+      return {
+        id: u.id,
+        username: u.username,
+        role: u.role,
+        phone_e164: u.phone_e164,
+        is_disabled: u.is_disabled,
+        profile_name: u.miner_profile?.full_name ?? null,
+        profile_completed: !!u.miner_profile?.profile_completed_at,
+        consented: !!u.miner_profile?.consented_at,
+        created_at: u.created_at.toISOString(),
+        survey_count: u.survey_responses.length,
+        risk_level: risk.level,
+      };
+    });
 
     return reply.send({ users: items, total });
   });
@@ -63,9 +116,11 @@ export const adminUserRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const [recordCount, purchaseCount] = await Promise.all([
+    const [recordCount, purchaseCount, surveyCount, risk] = await Promise.all([
       prisma.record.count({ where: { created_by: id } }),
       prisma.purchase.count({ where: { trader_id: id } }),
+      prisma.surveyResponse.count({ where: { user_id: id } }),
+      getUserRisk(id),
     ]);
 
     const detail: AdminUserDetail = {
@@ -79,6 +134,9 @@ export const adminUserRoutes: FastifyPluginAsync = async (app) => {
       profile: serializeProfile(user.miner_profile),
       record_count: recordCount,
       purchase_count: purchaseCount,
+      survey_count: surveyCount,
+      risk_level: risk.level,
+      risk_flags: risk.flags,
     };
 
     return reply.send(detail);

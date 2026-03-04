@@ -9,6 +9,7 @@ import { UserDetailScreen } from './users/UserDetailScreen';
 import { RecordListScreen } from './records/RecordListScreen';
 import { RecordDetailScreen } from './records/RecordDetailScreen';
 import { ComplianceScreen } from './compliance/ComplianceScreen';
+import { SurveyManagementScreen } from './surveys/SurveyManagementScreen';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -78,6 +79,8 @@ function AppContent() {
         ) : null;
       case 'compliance':
         return <ComplianceScreen onSelectRecord={navigateToRecord} />;
+      case 'surveys':
+        return <SurveyManagementScreen />;
       default:
         return null;
     }

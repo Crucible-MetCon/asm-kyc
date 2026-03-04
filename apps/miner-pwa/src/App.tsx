@@ -18,6 +18,8 @@ import { PurchasesList } from './trader/PurchasesList';
 import { PurchaseDetail } from './trader/PurchaseDetail';
 import { SalesPartnerScreen } from './partners/SalesPartnerScreen';
 import { MineSiteScreen } from './mine-sites/MineSiteScreen';
+import { SurveyListScreen } from './surveys/SurveyListScreen';
+import { SurveyFlow } from './surveys/SurveyFlow';
 import { SyncStatusBanner } from './offline/SyncStatusBanner';
 import { initSyncEngine, teardownSyncEngine } from './offline/syncEngine';
 import { FeatureFlagProvider } from './config/FeatureFlagContext';
@@ -27,7 +29,8 @@ type AppScreen =
   | 'home' | 'records' | 'profile' | 'onboarding' | 'record-create' | 'record-detail' | 'record-edit'
   | 'trader-home' | 'available-records' | 'purchase-flow' | 'purchases' | 'purchase-detail'
   | 'mine-sites'
-  | 'sales-partners';
+  | 'sales-partners'
+  | 'surveys' | 'survey-flow';
 
 function I18nWrapper({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -43,6 +46,7 @@ function AppContent() {
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
   const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
+  const [selectedSurveySlug, setSelectedSurveySlug] = useState<string | null>(null);
 
   const isTraderOrRefiner = user?.role === 'TRADER_USER' || user?.role === 'REFINER_USER';
   const isMiner = user?.role === 'MINER_USER';
@@ -183,6 +187,24 @@ function AppContent() {
       // Miner: sales partners
       case 'sales-partners':
         return <SalesPartnerScreen />;
+      // Surveys
+      case 'surveys':
+        return (
+          <SurveyListScreen
+            onStartSurvey={(slug) => {
+              setSelectedSurveySlug(slug);
+              setAppScreen('survey-flow');
+            }}
+          />
+        );
+      case 'survey-flow':
+        return (
+          <SurveyFlow
+            slug={selectedSurveySlug!}
+            onComplete={() => setAppScreen('surveys')}
+            onBack={() => setAppScreen('surveys')}
+          />
+        );
       // Trader/Refiner screens
       case 'trader-home':
         return <TraderHomeScreen onNavigate={(screen) => setAppScreen(screen as AppScreen)} />;
@@ -234,6 +256,7 @@ function AppContent() {
   // Determine which tab is active
   const getActiveTab = () => {
     if (appScreen === 'sales-partners') return 'sales-partners';
+    if (appScreen === 'surveys' || appScreen === 'survey-flow') return 'surveys';
     if (appScreen.startsWith('record')) return isTraderOrRefiner ? 'available-records' : 'records';
     if (appScreen.startsWith('purchase') || appScreen === 'purchase-flow') return 'purchases';
     if (appScreen === 'available-records') return 'available-records';
@@ -281,6 +304,12 @@ function AppContent() {
       icon: '\u{1F4CB}',
       active: activeTab === 'records',
       onClick: () => setAppScreen('records'),
+    },
+    {
+      label: t.nav.surveys,
+      icon: '\u{1F4DD}',
+      active: activeTab === 'surveys',
+      onClick: () => setAppScreen('surveys'),
     },
     {
       label: t.nav.partners,

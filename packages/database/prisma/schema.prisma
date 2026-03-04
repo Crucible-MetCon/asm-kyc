@@ -53,6 +53,7 @@ model User {
   mine_sites          MineSite[]
   record_receipts     RecordReceipt[]
   intended_records    Record[] @relation("IntendedBuyer")
+  survey_responses    SurveyResponse[]
 
   @@map("users")
 }
@@ -393,4 +394,67 @@ model RecordCounter {
   value Int    @default(0)
 
   @@map("record_counters")
+}
+
+// ─── Phase 7: KYC Surveys ─────────────────────────────────
+
+model SurveyDefinition {
+  id              String   @id @default(uuid()) @db.Uuid
+  slug            String   @unique @db.VarChar(50)
+  display_order   Int      @default(0)
+  reward_amount   Decimal  @db.Decimal(10, 2)
+  reward_currency String   @default("USD") @db.VarChar(3)
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  responses SurveyResponse[]
+
+  @@map("survey_definitions")
+}
+
+model SurveyResponse {
+  id           String   @id @default(uuid()) @db.Uuid
+  survey_id    String   @db.Uuid
+  user_id      String   @db.Uuid
+  completed_at DateTime @default(now())
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  survey  SurveyDefinition @relation(fields: [survey_id], references: [id], onDelete: Cascade)
+  user    User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  answers SurveyAnswer[]
+  reward  SurveyReward?
+
+  @@unique([survey_id, user_id])
+  @@index([user_id])
+  @@map("survey_responses")
+}
+
+model SurveyAnswer {
+  id          String @id @default(uuid()) @db.Uuid
+  response_id String @db.Uuid
+  question_id String @db.VarChar(50)
+  answer      Json
+
+  response SurveyResponse @relation(fields: [response_id], references: [id], onDelete: Cascade)
+
+  @@index([response_id])
+  @@map("survey_answers")
+}
+
+model SurveyReward {
+  id          String    @id @default(uuid()) @db.Uuid
+  response_id String   @unique @db.Uuid
+  amount      Decimal   @db.Decimal(10, 2)
+  currency    String    @default("USD") @db.VarChar(3)
+  status      String    @default("PENDING") @db.VarChar(20)
+  paid_at     DateTime?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  response SurveyResponse @relation(fields: [response_id], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("survey_rewards")
 }

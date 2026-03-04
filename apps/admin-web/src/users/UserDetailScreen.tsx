@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
 import type { AdminUserDetail } from '@asm-kyc/shared';
+import { RiskBadge } from './RiskBadge';
 
 interface UserDetailScreenProps {
   userId: string;
@@ -74,16 +75,28 @@ export function UserDetailScreen({ userId, onBack }: UserDetailScreenProps) {
             <span className="badge badge-active">Active</span>
           )}
         </div>
-        {user.role !== 'ADMIN_USER' && (
-          <button
-            type="button"
-            className={`btn btn-sm ${user.is_disabled ? 'btn-primary' : 'btn-danger'}`}
-            onClick={handleToggleDisable}
-            disabled={toggling}
-          >
-            {toggling ? '...' : user.is_disabled ? 'Enable User' : 'Disable User'}
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {user.role !== 'ADMIN_USER' && (
+            <a
+              href={`/api/admin/users/${userId}/entity-pack`}
+              className="btn btn-secondary btn-sm"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Download Entity Pack
+            </a>
+          )}
+          {user.role !== 'ADMIN_USER' && (
+            <button
+              type="button"
+              className={`btn btn-sm ${user.is_disabled ? 'btn-primary' : 'btn-danger'}`}
+              onClick={handleToggleDisable}
+              disabled={toggling}
+            >
+              {toggling ? '...' : user.is_disabled ? 'Enable User' : 'Disable User'}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card">
@@ -183,7 +196,61 @@ export function UserDetailScreen({ userId, onBack }: UserDetailScreenProps) {
             <label>Purchases Made</label>
             <div className="value">{user.purchase_count}</div>
           </div>
+          <div className="detail-field">
+            <label>Surveys Completed</label>
+            <div className="value">{user.survey_count} / 6</div>
+          </div>
         </div>
+      </div>
+
+      <div className="card">
+        <h2 className="card-title">Risk Assessment</h2>
+        <div className="detail-grid">
+          <div className="detail-field">
+            <label>Risk Level</label>
+            <div className="value"><RiskBadge level={user.risk_level} /></div>
+          </div>
+        </div>
+        {user.risk_flags.length > 0 ? (
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontWeight: 600, display: 'block', marginBottom: 8 }}>Triggered Flags</label>
+            <table className="data-table" style={{ marginTop: 0 }}>
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Flag</th>
+                  <th>Survey</th>
+                  <th>Question</th>
+                </tr>
+              </thead>
+              <tbody>
+                {user.risk_flags.map((flag, i) => (
+                  <tr key={i}>
+                    <td>
+                      <span
+                        className="badge"
+                        style={{
+                          backgroundColor: flag.severity === 'CRITICAL' ? '#fde8e8'
+                            : flag.severity === 'HIGH' ? '#fff3e0' : '#fef9c3',
+                          color: flag.severity === 'CRITICAL' ? '#dc2626'
+                            : flag.severity === 'HIGH' ? '#ea580c' : '#ca8a04',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {flag.severity}
+                      </span>
+                    </td>
+                    <td>{flag.label_key.replace('risk.', '')}</td>
+                    <td>{flag.survey_slug}</td>
+                    <td>{flag.question_id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p style={{ color: '#6b7280', marginTop: 8 }}>No risk flags triggered.</p>
+        )}
       </div>
     </div>
   );

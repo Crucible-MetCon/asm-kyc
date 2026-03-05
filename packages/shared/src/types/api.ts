@@ -495,3 +495,30 @@ export interface DocumentExtractionResult {
   confidence: string;
   raw_description: string;
 }
+
+// Phase 9: Entity Pack browser types
+
+export interface EntityPackFile {
+  key: string;
+  filename: string;
+  size: number;
+  last_modified: string | null;
+}
+
+export interface EntityPackFolder {
+  user_id: string;
+  user_name: string;
+  user_role: string;
+  pack_count: number;
+  latest_date: string | null;
+  packs: EntityPackFile[];
+}
+
+export interface EntityPackListResponse {
+  folders: EntityPackFolder[];
+  total_packs: number;
+}
+
+export interface EntityPackDownloadResponse {
+  url: string;
+}

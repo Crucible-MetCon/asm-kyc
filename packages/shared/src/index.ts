@@ -110,6 +110,10 @@ export {
   type DocumentResponse,
   type DocumentListResponse,
   type DocumentExtractionResult,
+  type EntityPackFile,
+  type EntityPackFolder,
+  type EntityPackListResponse,
+  type EntityPackDownloadResponse,
 } from './types/api.js';
 
 export {

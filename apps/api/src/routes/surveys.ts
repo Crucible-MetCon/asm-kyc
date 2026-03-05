@@ -8,6 +8,7 @@ import {
 } from '@asm-kyc/shared';
 import { authenticate } from '../middleware/auth.js';
 import { triggerSurveyReward } from '../lib/surveyReward.js';
+import { generateAndUploadEntityPack } from '../lib/entityPackUploader.js';
 
 export const surveyRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', authenticate);
@@ -236,6 +237,9 @@ export const surveyRoutes: FastifyPluginAsync = async (app) => {
       rewardAmount,
       dbSurvey.reward_currency,
     ).catch(() => {});
+
+    // 6. Generate entity pack PDF and upload to R2 (non-blocking)
+    generateAndUploadEntityPack(userId).catch(() => {});
 
     return reply.status(201).send({
       id: response.id,

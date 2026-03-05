@@ -10,6 +10,7 @@ import { RecordListScreen } from './records/RecordListScreen';
 import { RecordDetailScreen } from './records/RecordDetailScreen';
 import { ComplianceScreen } from './compliance/ComplianceScreen';
 import { SurveyManagementScreen } from './surveys/SurveyManagementScreen';
+import { EntityPackScreen } from './entity-packs/EntityPackScreen';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -81,6 +82,8 @@ function AppContent() {
         return <ComplianceScreen onSelectRecord={navigateToRecord} />;
       case 'surveys':
         return <SurveyManagementScreen />;
+      case 'entity-packs':
+        return <EntityPackScreen onNavigateToUser={navigateToUser} />;
       default:
         return null;
     }

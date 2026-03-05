@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 let client: S3Client | null = null;
@@ -110,4 +110,49 @@ export function buildDocumentKey(
   ext: string,
 ): string {
   return `documents/${userId}/${docType}.${ext}`;
+}
+
+/** Object returned by listR2Objects. */
+export interface R2Object {
+  key: string;
+  size: number;
+  lastModified: Date | undefined;
+}
+
+/** List objects in R2 with a given prefix. Paginates automatically. Returns [] if R2 not configured. */
+export async function listR2Objects(prefix: string): Promise<R2Object[]> {
+  const s3 = getClient();
+  if (!s3) return [];
+
+  const objects: R2Object[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const response = await s3.send(
+      new ListObjectsV2Command({
+        Bucket: getBucket(),
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }),
+    );
+
+    for (const obj of response.Contents ?? []) {
+      if (obj.Key) {
+        objects.push({
+          key: obj.Key,
+          size: obj.Size ?? 0,
+          lastModified: obj.LastModified,
+        });
+      }
+    }
+
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken);
+
+  return objects;
+}
+
+/** Build an R2 key for an entity pack PDF. */
+export function buildEntityPackKey(userId: string, filename: string): string {
+  return `entity-packs/${userId}/${filename}`;
 }

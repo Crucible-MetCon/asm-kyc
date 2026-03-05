@@ -7,7 +7,8 @@ export type AdminScreen =
   | 'records'
   | 'record-detail'
   | 'compliance'
-  | 'surveys';
+  | 'surveys'
+  | 'entity-packs';
 
 interface SidebarProps {
   screen: AdminScreen;
@@ -20,6 +21,7 @@ const navItems: { screen: AdminScreen; label: string; icon: string }[] = [
   { screen: 'records', label: 'Records', icon: '📋' },
   { screen: 'compliance', label: 'Compliance', icon: '✅' },
   { screen: 'surveys', label: 'Surveys', icon: '📝' },
+  { screen: 'entity-packs', label: 'Entity Packs', icon: '📁' },
 ];
 
 export function Sidebar({ screen, onNavigate }: SidebarProps) {

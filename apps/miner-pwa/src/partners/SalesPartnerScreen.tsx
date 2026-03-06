@@ -72,7 +72,16 @@ export function SalesPartnerScreen() {
 
   const getRoleBadge = (role: string) => {
     if (role === 'REFINER_USER') return t.salesPartners.refiner;
+    if (role === 'AGGREGATOR_USER') return t.salesPartners.aggregator ?? 'Aggregator';
+    if (role === 'MELTER_USER') return t.salesPartners.melter ?? 'Melter';
+    if (role === 'PROCESSOR_USER') return t.salesPartners.processor ?? 'Processor';
     return t.salesPartners.trader;
+  };
+
+  const getRoleBadgeClass = (role: string) => {
+    if (role === 'REFINER_USER') return 'refiner';
+    if (role === 'AGGREGATOR_USER') return 'aggregator';
+    return 'trader';
   };
 
   if (loading) {
@@ -97,7 +106,7 @@ export function SalesPartnerScreen() {
             <div key={sp.id} className="partner-card">
               <div className="partner-card-info">
                 <span className="partner-card-name">{sp.partner_name}</span>
-                <span className={`role-badge role-badge-${sp.partner_role === 'REFINER_USER' ? 'refiner' : 'trader'}`}>
+                <span className={`role-badge role-badge-${getRoleBadgeClass(sp.partner_role)}`}>
                   {getRoleBadge(sp.partner_role)}
                 </span>
               </div>
@@ -144,7 +153,7 @@ export function SalesPartnerScreen() {
                 >
                   <div className="partner-select-info">
                     <span className="partner-select-name">{partner.full_name}</span>
-                    <span className={`role-badge role-badge-${partner.role === 'REFINER_USER' ? 'refiner' : 'trader'}`}>
+                    <span className={`role-badge role-badge-${getRoleBadgeClass(partner.role)}`}>
                       {getRoleBadge(partner.role)}
                     </span>
                   </div>

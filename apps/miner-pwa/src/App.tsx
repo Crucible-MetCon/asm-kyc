@@ -71,6 +71,8 @@ function AppContent() {
   const isTraderOrRefiner = user?.role === 'TRADER_USER' || user?.role === 'REFINER_USER'
     || user?.role === 'AGGREGATOR_USER' || user?.role === 'MELTER_USER' || user?.role === 'PROCESSOR_USER';
   const isMiner = user?.role === 'MINER_USER';
+  // Middlemen roles that both buy AND sell (need partners tab)
+  const isMiddleman = user?.role === 'AGGREGATOR_USER' || user?.role === 'MELTER_USER' || user?.role === 'PROCESSOR_USER';
 
   // LBMA compliance: check if mandatory documents have been uploaded
   const uploadedDocs = user?.uploaded_doc_types ?? [];
@@ -344,6 +346,13 @@ function AppContent() {
       active: activeTab === 'purchases',
       onClick: () => setAppScreen('purchases'),
     },
+    // Middlemen (aggregators, melters, processors) also sell to others
+    ...(isMiddleman ? [{
+      label: t.nav.partners,
+      icon: Handshake,
+      active: activeTab === 'sales-partners',
+      onClick: () => setAppScreen('sales-partners' as AppScreen),
+    }] : []),
     {
       label: t.nav.profile,
       icon: User,

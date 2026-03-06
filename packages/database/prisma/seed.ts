@@ -115,7 +115,7 @@ async function main() {
     },
   });
 
-  // Refiner user
+  // Refiner user — "Minera" (the single refiner buying from aggregators)
   const refiner1User = await prisma.user.upsert({
     where: { username: 'refiner1' },
     update: {},
@@ -126,7 +126,7 @@ async function main() {
       role: 'REFINER_USER',
       miner_profile: {
         create: {
-          full_name: 'Zambia Gold Refinery',
+          full_name: 'Minera',
           counterparty_type: 'TRADER_AGGREGATOR',
           home_language: 'en',
           profile_completed_at: new Date(),
@@ -135,7 +135,7 @@ async function main() {
     },
   });
 
-  // Ensure refiner has a profile
+  // Ensure refiner has a profile and update name to Minera
   const refinerProfile = await prisma.minerProfile.findUnique({
     where: { user_id: refiner1User.id },
   });
@@ -143,13 +143,19 @@ async function main() {
     await prisma.minerProfile.create({
       data: {
         user_id: refiner1User.id,
-        full_name: 'Zambia Gold Refinery',
+        full_name: 'Minera',
         counterparty_type: 'TRADER_AGGREGATOR',
         home_language: 'en',
         profile_completed_at: new Date(),
       },
     });
     console.log('  Created missing refiner1 profile');
+  } else if (refinerProfile.full_name !== 'Minera') {
+    await prisma.minerProfile.update({
+      where: { user_id: refiner1User.id },
+      data: { full_name: 'Minera' },
+    });
+    console.log('  Updated refiner1 name to Minera');
   }
 
   // Aggregator user
@@ -226,8 +232,61 @@ async function main() {
     console.log('  Created missing melter1 profile');
   }
 
+  // Small-scale miner — sells directly to Minera (refiner)
+  const miner3User = await prisma.user.upsert({
+    where: { username: 'miner3' },
+    update: {},
+    create: {
+      username: 'miner3',
+      phone_e164: '+260600000008',
+      password_hash: minerHash,
+      role: 'MINER_USER',
+      miner_profile: {
+        create: {
+          full_name: 'Joseph Tembo',
+          counterparty_type: 'INDIVIDUAL_ASM',
+          home_language: 'nya',
+          nrc_number: '111222/33/4',
+          date_of_birth: new Date('1985-03-12'),
+          gender: 'male',
+          mine_site_name: null,
+          mine_site_location: 'Mpika District, small alluvial deposit (-11.83, 31.45)',
+          mining_license_number: 'ZM-MPK-2025-010',
+          profile_completed_at: new Date(),
+          consent_version: 'v1.0',
+          consented_at: new Date(),
+        },
+      },
+    },
+  });
+
   // Sales partner relationships
-  // miner1 sells to trader1 and refiner1
+  // Supply chain: miners → aggregator1 → Minera (refiner1)
+  // miner1 sells to aggregator1
+  await prisma.salesPartner.upsert({
+    where: { miner_id_partner_id: { miner_id: miner1User.id, partner_id: aggregator1User.id } },
+    update: {},
+    create: { miner_id: miner1User.id, partner_id: aggregator1User.id },
+  });
+  // miner2 sells to aggregator1
+  await prisma.salesPartner.upsert({
+    where: { miner_id_partner_id: { miner_id: miner2User.id, partner_id: aggregator1User.id } },
+    update: {},
+    create: { miner_id: miner2User.id, partner_id: aggregator1User.id },
+  });
+  // aggregator1 sells to Minera (refiner1)
+  await prisma.salesPartner.upsert({
+    where: { miner_id_partner_id: { miner_id: aggregator1User.id, partner_id: refiner1User.id } },
+    update: {},
+    create: { miner_id: aggregator1User.id, partner_id: refiner1User.id },
+  });
+  // miner3 (small-scale mine) sells directly to Minera (refiner1)
+  await prisma.salesPartner.upsert({
+    where: { miner_id_partner_id: { miner_id: miner3User.id, partner_id: refiner1User.id } },
+    update: {},
+    create: { miner_id: miner3User.id, partner_id: refiner1User.id },
+  });
+  // Keep existing: miner1 → trader1, miner1 → refiner1 for backward compat
   await prisma.salesPartner.upsert({
     where: { miner_id_partner_id: { miner_id: miner1User.id, partner_id: trader1User.id } },
     update: {},
@@ -238,7 +297,6 @@ async function main() {
     update: {},
     create: { miner_id: miner1User.id, partner_id: refiner1User.id },
   });
-  // miner2 sells to trader1 only
   await prisma.salesPartner.upsert({
     where: { miner_id_partner_id: { miner_id: miner2User.id, partner_id: trader1User.id } },
     update: {},
@@ -546,6 +604,21 @@ Ndasumina ukuti nabelenga no kumfwikisha ifyo fyalembwa, kabili ndasumina pa kut
       },
     });
 
+    // Mine site for miner3 (small-scale)
+    await prisma.mineSite.upsert({
+      where: { id: '00000000-0000-0000-0000-000000000053' },
+      update: {},
+      create: {
+        id: '00000000-0000-0000-0000-000000000053',
+        miner_id: miner3User.id,
+        name: 'Mpika Alluvial Deposit',
+        gps_latitude: -11.83,
+        gps_longitude: 31.45,
+        mining_license_number: 'ZM-MPK-2025-010',
+        is_default: true,
+      },
+    });
+
     // Link records to mine sites
     await prisma.record.update({
       where: { id: '00000000-0000-0000-0000-000000000001' },
@@ -628,19 +701,22 @@ Ndasumina ukuti nabelenga no kumfwikisha ifyo fyalembwa, kabili ndasumina pa kut
 
   console.log('Seed complete:');
   console.log('  admin       / admin123       (ADMIN_USER)');
-  console.log('  miner1      / miner123       (MINER_USER)');
-  console.log('  miner2      / miner123       (MINER_USER)');
+  console.log('  miner1      / miner123       (MINER_USER) — Test Miner');
+  console.log('  miner2      / miner123       (MINER_USER) — Jane Mwila');
+  console.log('  miner3      / miner123       (MINER_USER) — Joseph Tembo (small-scale)');
   console.log('  trader1     / trader123      (TRADER_USER)');
-  console.log('  refiner1    / refiner123     (REFINER_USER)');
-  console.log('  aggregator1 / aggregator123  (AGGREGATOR_USER)');
+  console.log('  refiner1    / refiner123     (REFINER_USER) — Minera');
+  console.log('  aggregator1 / aggregator123  (AGGREGATOR_USER) — Copperbelt Aggregators');
   console.log('  melter1     / melter123      (MELTER_USER)');
   console.log('  consent v1.0 (en + bem)');
   console.log('  5 sample records (3 submitted, 1 draft, 1 purchased)');
   console.log('  1 sample purchase (trader1 → miner2 record) with payment data');
   console.log('  6 KYC survey definitions ($16 total rewards)');
   console.log('  Sales partners:');
-  console.log('    miner1 → trader1, refiner1');
-  console.log('    miner2 → trader1');
+  console.log('    miner1 → aggregator1, trader1, Minera');
+  console.log('    miner2 → aggregator1, trader1');
+  console.log('    miner3 → Minera (direct, small-scale)');
+  console.log('    aggregator1 → Minera');
 }
 
 main()

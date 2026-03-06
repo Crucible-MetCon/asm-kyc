@@ -4,12 +4,17 @@ import { SalesPartnerAddSchema } from '@asm-kyc/shared';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/rbac.js';
 
+// Roles that can select sales partners (sellers)
+const SELLER_ROLES = ['MINER_USER', 'AGGREGATOR_USER', 'MELTER_USER', 'PROCESSOR_USER'] as const;
+// Roles that can be selected as a buyer/partner
+const BUYER_ROLES = ['TRADER_USER', 'REFINER_USER', 'AGGREGATOR_USER', 'MELTER_USER', 'PROCESSOR_USER'] as const;
+
 export const salesPartnerRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', authenticate);
 
-  // GET /sales-partners — list my sales partners (miner's perspective)
+  // GET /sales-partners — list my sales partners
   app.get('/', {
-    preHandler: [requireRole('MINER_USER')],
+    preHandler: [requireRole(...SELLER_ROLES)],
     handler: async (request, reply) => {
       const user = request.user!;
 
@@ -35,9 +40,9 @@ export const salesPartnerRoutes: FastifyPluginAsync = async (app) => {
     },
   });
 
-  // GET /sales-partners/available — list all traders/refiners a miner can choose from
+  // GET /sales-partners/available — list all buyers a seller can choose from
   app.get('/available', {
-    preHandler: [requireRole('MINER_USER')],
+    preHandler: [requireRole(...SELLER_ROLES)],
     handler: async (request, reply) => {
       const user = request.user!;
 
@@ -48,11 +53,11 @@ export const salesPartnerRoutes: FastifyPluginAsync = async (app) => {
       });
       const existingIds = existing.map((sp) => sp.partner_id);
 
-      // Find all traders and refiners NOT already selected
+      // Find all valid buyer roles NOT already selected (exclude self)
       const partners = await prisma.user.findMany({
         where: {
-          role: { in: ['TRADER_USER', 'REFINER_USER'] },
-          id: { notIn: existingIds.length > 0 ? existingIds : ['no-match'] },
+          role: { in: [...BUYER_ROLES] },
+          id: { notIn: [...(existingIds.length > 0 ? existingIds : []), user.id] },
         },
         include: { miner_profile: true },
         orderBy: { created_at: 'asc' },
@@ -72,7 +77,7 @@ export const salesPartnerRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /sales-partners — add a sales partner
   app.post('/', {
-    preHandler: [requireRole('MINER_USER')],
+    preHandler: [requireRole(...SELLER_ROLES)],
     handler: async (request, reply) => {
       const parsed = SalesPartnerAddSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -91,11 +96,12 @@ export const salesPartnerRoutes: FastifyPluginAsync = async (app) => {
         where: { id: partner_id },
       });
 
-      if (!partner || (partner.role !== 'TRADER_USER' && partner.role !== 'REFINER_USER')) {
+      const validBuyerRoles: string[] = [...BUYER_ROLES];
+      if (!partner || !validBuyerRoles.includes(partner.role) || partner.id === user.id) {
         return reply.status(400).send({
           statusCode: 400,
           error: 'Bad Request',
-          message: 'Invalid partner: must be a trader or refiner',
+          message: 'Invalid partner: must be a valid buyer role',
         });
       }
 
@@ -135,7 +141,7 @@ export const salesPartnerRoutes: FastifyPluginAsync = async (app) => {
 
   // DELETE /sales-partners/:partnerId — remove a sales partner
   app.delete<{ Params: { partnerId: string } }>('/:partnerId', {
-    preHandler: [requireRole('MINER_USER')],
+    preHandler: [requireRole(...SELLER_ROLES)],
     handler: async (request, reply) => {
       const user = request.user!;
       const { partnerId } = request.params;

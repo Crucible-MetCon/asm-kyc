@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useI18n } from '../../i18n/I18nContext';
 import { apiFetch } from '../../api/client';
 import type { VisionEstimationResult } from '@asm-kyc/shared';
@@ -32,6 +32,9 @@ export function GoldPhotoCapture({ recordId, goldType, onEstimation, onPhotos }:
   const [estimation, setEstimation] = useState<VisionEstimationResult | null>(null);
   const [error, setError] = useState('');
 
+  // Track whether we've already triggered estimation for the current photo pair
+  const estimationTriggeredRef = useRef(false);
+
   const handleTopPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -40,6 +43,7 @@ export function GoldPhotoCapture({ recordId, goldType, onEstimation, onPhotos }:
       const dataUri = reader.result as string;
       setTopPhoto(dataUri);
       setEstimation(null);
+      estimationTriggeredRef.current = false;
       if (sidePhoto) onPhotos(dataUri, sidePhoto);
     };
     reader.readAsDataURL(file);
@@ -53,36 +57,34 @@ export function GoldPhotoCapture({ recordId, goldType, onEstimation, onPhotos }:
       const dataUri = reader.result as string;
       setSidePhoto(dataUri);
       setEstimation(null);
+      estimationTriggeredRef.current = false;
       if (topPhoto) onPhotos(topPhoto, dataUri);
     };
     reader.readAsDataURL(file);
   };
 
-  const runEstimation = async () => {
-    if (!topPhoto || !sidePhoto) return;
+  const runEstimation = async (top: string, side: string) => {
     setEstimating(true);
     setError('');
 
     try {
       if (recordId) {
-        // Use the record-specific endpoint
         const result = await apiFetch<{ estimation: VisionEstimationResult }>(`/records/${recordId}/estimate`, {
           method: 'POST',
           body: JSON.stringify({
-            top_photo: topPhoto,
-            side_photo: sidePhoto,
+            top_photo: top,
+            side_photo: side,
             gold_type: goldType || 'RAW_GOLD',
           }),
         });
         setEstimation(result.estimation);
         onEstimation(result.estimation);
       } else {
-        // Use the vision endpoint directly (for new records not yet saved)
         const result = await apiFetch<VisionEstimationResult>('/vision/estimate-gold', {
           method: 'POST',
           body: JSON.stringify({
-            top_photo: topPhoto,
-            side_photo: sidePhoto,
+            top_photo: top,
+            side_photo: side,
             gold_type: goldType || 'RAW_GOLD',
           }),
         });
@@ -96,6 +98,14 @@ export function GoldPhotoCapture({ recordId, goldType, onEstimation, onPhotos }:
     }
   };
 
+  // Auto-trigger estimation when both photos are available
+  useEffect(() => {
+    if (topPhoto && sidePhoto && !estimation && !estimating && !estimationTriggeredRef.current) {
+      estimationTriggeredRef.current = true;
+      runEstimation(topPhoto, sidePhoto);
+    }
+  }, [topPhoto, sidePhoto]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="gold-photo-capture">
       <div className="form-group">
@@ -107,33 +117,37 @@ export function GoldPhotoCapture({ recordId, goldType, onEstimation, onPhotos }:
         </p>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
         {/* Top Photo */}
-        <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 4 }}>
+        <div>
+          <label style={{ fontSize: 14, fontWeight: 600, display: 'block', marginBottom: 8 }}>
             {t.records.topPhoto || 'Top View'}
           </label>
           {topPhoto ? (
-            <div style={{ position: 'relative' }}>
+            <div>
               <img
                 src={topPhoto}
                 alt="Top view"
                 style={{ width: '100%', borderRadius: 8, border: '2px solid #d4a017' }}
               />
-              <button
-                type="button"
-                onClick={() => { setTopPhoto(null); setEstimation(null); }}
-                style={{
-                  position: 'absolute', top: 4, right: 4,
-                  background: '#fff', border: 'none', borderRadius: '50%',
-                  width: 28, height: 28, cursor: 'pointer', fontWeight: 700,
-                }}
-              >
-                x
-              </button>
+              <label style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                marginTop: 8, padding: '10px 16px', fontSize: 14, fontWeight: 500,
+                color: 'var(--color-gold)', border: '1px solid var(--color-gold)',
+                borderRadius: 'var(--radius)', cursor: 'pointer', minHeight: 44,
+              }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleTopPhoto}
+                  style={{ display: 'none' }}
+                />
+                {t.vision?.retake || 'Retake Photo'}
+              </label>
             </div>
           ) : (
-            <label className="photo-capture-btn" style={{ height: 120 }}>
+            <label className="photo-capture-btn" style={{ height: 160 }}>
               <input
                 type="file"
                 accept="image/*"
@@ -141,38 +155,42 @@ export function GoldPhotoCapture({ recordId, goldType, onEstimation, onPhotos }:
                 onChange={handleTopPhoto}
                 style={{ display: 'none' }}
               />
-              <span style={{ fontSize: 28 }}>📷</span>
-              <span style={{ fontSize: 12 }}>{t.records.takeTopPhoto || 'Take Top Photo'}</span>
+              <span style={{ fontSize: 32 }}>📷</span>
+              <span style={{ fontSize: 14 }}>{t.records.takeTopPhoto || 'Take Top Photo'}</span>
             </label>
           )}
         </div>
 
         {/* Side Photo */}
-        <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 4 }}>
+        <div>
+          <label style={{ fontSize: 14, fontWeight: 600, display: 'block', marginBottom: 8 }}>
             {t.records.sidePhoto || 'Side View'}
           </label>
           {sidePhoto ? (
-            <div style={{ position: 'relative' }}>
+            <div>
               <img
                 src={sidePhoto}
                 alt="Side view"
                 style={{ width: '100%', borderRadius: 8, border: '2px solid #d4a017' }}
               />
-              <button
-                type="button"
-                onClick={() => { setSidePhoto(null); setEstimation(null); }}
-                style={{
-                  position: 'absolute', top: 4, right: 4,
-                  background: '#fff', border: 'none', borderRadius: '50%',
-                  width: 28, height: 28, cursor: 'pointer', fontWeight: 700,
-                }}
-              >
-                x
-              </button>
+              <label style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                marginTop: 8, padding: '10px 16px', fontSize: 14, fontWeight: 500,
+                color: 'var(--color-gold)', border: '1px solid var(--color-gold)',
+                borderRadius: 'var(--radius)', cursor: 'pointer', minHeight: 44,
+              }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleSidePhoto}
+                  style={{ display: 'none' }}
+                />
+                {t.vision?.retake || 'Retake Photo'}
+              </label>
             </div>
           ) : (
-            <label className="photo-capture-btn" style={{ height: 120 }}>
+            <label className="photo-capture-btn" style={{ height: 160 }}>
               <input
                 type="file"
                 accept="image/*"
@@ -180,26 +198,28 @@ export function GoldPhotoCapture({ recordId, goldType, onEstimation, onPhotos }:
                 onChange={handleSidePhoto}
                 style={{ display: 'none' }}
               />
-              <span style={{ fontSize: 28 }}>📷</span>
-              <span style={{ fontSize: 12 }}>{t.records.takeSidePhoto || 'Take Side Photo'}</span>
+              <span style={{ fontSize: 32 }}>📷</span>
+              <span style={{ fontSize: 14 }}>{t.records.takeSidePhoto || 'Take Side Photo'}</span>
             </label>
           )}
         </div>
       </div>
 
-      {/* Estimate Button */}
-      {topPhoto && sidePhoto && !estimation && (
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={runEstimation}
-          disabled={estimating}
-          style={{ width: '100%', marginBottom: 16 }}
-        >
-          {estimating
-            ? (t.records.estimatingAI || 'Analysing photos...')
-            : (t.records.runEstimation || 'Estimate Weight & Purity')}
-        </button>
+      {/* Estimating spinner */}
+      {estimating && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          padding: 16, marginBottom: 16,
+          background: '#f0f9ff', border: '1px solid #bfdbfe', borderRadius: 12,
+        }}>
+          <span className="login-spinner" style={{
+            borderColor: 'rgba(184, 134, 11, 0.3)',
+            borderTopColor: 'var(--color-gold)',
+          }} />
+          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+            {t.records.estimatingAI || 'Analysing photos...'}
+          </span>
+        </div>
       )}
 
       {error && <div className="error-message" style={{ marginBottom: 12 }}>{error}</div>}

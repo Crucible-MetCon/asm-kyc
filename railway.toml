@@ -1,0 +1,20 @@
+# Railway Config-as-Code for ASM Gold Trace
+# Single service (Dockerfile.api builds API + serves miner-pwa + admin-web)
+
+[build]
+dockerfilePath = "Dockerfile.api"
+watchPatterns = [
+  "apps/api/**",
+  "apps/miner-pwa/**",
+  "apps/admin-web/**",
+  "packages/database/**",
+  "packages/shared/**",
+  "Dockerfile.api",
+  "pnpm-lock.yaml",
+]
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

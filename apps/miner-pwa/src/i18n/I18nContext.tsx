@@ -1,10 +1,13 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { en, type TranslationKeys } from './en';
 import { bem } from './bem';
+import { ton } from './ton';
+import { nya } from './nya';
+import { zh } from './zh';
 
-export type Language = 'en' | 'bem';
+export type Language = 'en' | 'bem' | 'ton' | 'nya' | 'zh';
 
-const translations: Record<Language, TranslationKeys> = { en, bem };
+const translations: Record<Language, TranslationKeys> = { en, bem, ton, nya, zh };
 
 interface I18nState {
   lang: Language;

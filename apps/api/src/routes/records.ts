@@ -57,7 +57,7 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /records — create a new draft (all non-admin roles)
   app.post('/', {
-    preHandler: [requireRole('MINER_USER', 'TRADER_USER', 'AGGREGATOR_USER', 'REFINER_USER', 'MELTER_USER')],
+    preHandler: [requireRole('MINER_USER', 'TRADER_USER', 'AGGREGATOR_USER', 'REFINER_USER', 'MELTER_USER', 'PROCESSOR_USER')],
     handler: async (request, reply) => {
       const parsed = RecordCreateSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -128,7 +128,7 @@ export const recordRoutes: FastifyPluginAsync = async (app) => {
   // GET /records/available — list SUBMITTED records for traders/refiners
   // Only shows records from miners who have this trader/refiner as a sales partner
   app.get('/available', {
-    preHandler: [requireRole('TRADER_USER', 'REFINER_USER', 'AGGREGATOR_USER', 'MELTER_USER')],
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER', 'AGGREGATOR_USER', 'MELTER_USER', 'PROCESSOR_USER')],
     handler: async (request, reply) => {
       const user = request.user!;
 

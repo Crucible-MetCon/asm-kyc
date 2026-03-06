@@ -54,6 +54,7 @@ export function UserListScreen({ onSelectUser }: UserListScreenProps) {
       REFINER_USER: 'Refiner',
       AGGREGATOR_USER: 'Aggregator',
       MELTER_USER: 'Melter',
+      PROCESSOR_USER: 'Processor',
       ADMIN_USER: 'Admin',
     };
     return map[r] ?? r;
@@ -78,6 +79,7 @@ export function UserListScreen({ onSelectUser }: UserListScreenProps) {
           <option value="REFINER_USER">Refiners</option>
           <option value="AGGREGATOR_USER">Aggregators</option>
           <option value="MELTER_USER">Melters</option>
+          <option value="PROCESSOR_USER">Processors</option>
           <option value="ADMIN_USER">Admins</option>
         </select>
         <SearchInput value={search} onChange={setSearch} placeholder="Search username or name..." />

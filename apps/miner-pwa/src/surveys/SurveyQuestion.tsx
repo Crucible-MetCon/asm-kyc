@@ -1,5 +1,6 @@
 import type { SurveyQuestionDef } from '@asm-kyc/shared';
 import { useI18n } from '../i18n/I18nContext';
+import { Check } from 'lucide-react';
 
 interface Props {
   question: SurveyQuestionDef;
@@ -205,7 +206,7 @@ export function SurveyQuestion({ question, value, onChange }: Props) {
                     onChange(next);
                   }}
                 >
-                  <span className="survey-checkbox-indicator">{isChecked ? '✓' : ''}</span>
+                  <span className="survey-checkbox-indicator">{isChecked ? <Check size={14} /> : ''}</span>
                   {resolveKey(t as unknown as Record<string, unknown>, opt.i18nKey)}
                 </button>
               );

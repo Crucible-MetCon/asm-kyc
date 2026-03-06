@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '../api/client';
 import { useI18n } from '../i18n/I18nContext';
 import type { MineSiteResponse, MineSiteListResponse } from '@asm-kyc/shared';
+import { MapPin, Pickaxe } from 'lucide-react';
 
 interface Props {
   onBack?: () => void;
@@ -184,8 +185,8 @@ export function MineSiteScreen({ onBack }: Props) {
             </div>
           </div>
 
-          <button type="button" className="btn btn-secondary" style={{ marginBottom: 12, fontSize: 13 }} onClick={detectGps}>
-            {'\uD83D\uDCCD'} {t.mineSites.detectGps}
+          <button type="button" className="btn btn-secondary" style={{ marginBottom: 12, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={detectGps}>
+            <MapPin size={14} /> {t.mineSites.detectGps}
           </button>
 
           <div className="form-group">
@@ -212,7 +213,7 @@ export function MineSiteScreen({ onBack }: Props) {
 
       {sites.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">{'\u26CF\uFE0F'}</div>
+          <div className="empty-state-icon"><Pickaxe size={32} /></div>
           <div className="empty-state-title">{t.mineSites.noSites}</div>
           <p className="empty-state-hint">{t.mineSites.noSitesHint}</p>
         </div>
@@ -234,8 +235,8 @@ export function MineSiteScreen({ onBack }: Props) {
                     )}
                   </div>
                   {site.gps_latitude != null && site.gps_longitude != null && (
-                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                      {'\uD83D\uDCCD'} {site.gps_latitude.toFixed(4)}, {site.gps_longitude.toFixed(4)}
+                    <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <MapPin size={12} /> {site.gps_latitude.toFixed(4)}, {site.gps_longitude.toFixed(4)}
                     </div>
                   )}
                   {site.mining_license_number && (

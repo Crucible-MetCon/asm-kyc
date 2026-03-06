@@ -23,6 +23,16 @@ import { SurveyFlow } from './surveys/SurveyFlow';
 import { SyncStatusBanner } from './offline/SyncStatusBanner';
 import { initSyncEngine, teardownSyncEngine } from './offline/syncEngine';
 import { FeatureFlagProvider } from './config/FeatureFlagContext';
+import {
+  Home,
+  ClipboardList,
+  FileText,
+  Handshake,
+  User,
+  Search,
+  ShoppingCart,
+  Shield,
+} from 'lucide-react';
 
 type AuthScreen = 'login' | 'register';
 type AppScreen =
@@ -32,9 +42,12 @@ type AppScreen =
   | 'sales-partners'
   | 'surveys' | 'survey-flow';
 
+const VALID_LANGS: Language[] = ['en', 'bem', 'ton', 'nya', 'zh'];
+
 function I18nWrapper({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const lang = (user?.profile?.home_language === 'bem' ? 'bem' : 'en') as Language;
+  const profileLang = user?.profile?.home_language;
+  const lang: Language = VALID_LANGS.includes(profileLang as Language) ? (profileLang as Language) : 'en';
   return <I18nProvider initialLang={lang}>{children}</I18nProvider>;
 }
 
@@ -49,7 +62,7 @@ function AppContent() {
   const [selectedSurveySlug, setSelectedSurveySlug] = useState<string | null>(null);
 
   const isTraderOrRefiner = user?.role === 'TRADER_USER' || user?.role === 'REFINER_USER'
-    || user?.role === 'AGGREGATOR_USER' || user?.role === 'MELTER_USER';
+    || user?.role === 'AGGREGATOR_USER' || user?.role === 'MELTER_USER' || user?.role === 'PROCESSOR_USER';
   const isMiner = user?.role === 'MINER_USER';
 
   // Initialize sync engine when user is logged in
@@ -81,7 +94,11 @@ function AppContent() {
     return (
       <div className="screen screen-centered">
         <div style={{ textAlign: 'center', maxWidth: 360, padding: '0 16px' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🛡️</div>
+          <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-surface-secondary)', borderRadius: 'var(--radius-lg)', color: 'var(--color-gold)' }}>
+              <Shield size={32} />
+            </div>
+          </div>
           <h1 style={{ color: 'var(--color-gold)', marginBottom: 8 }}>Admin Account</h1>
           <p style={{ color: 'var(--color-text-secondary)', marginBottom: 24, lineHeight: 1.5 }}>
             {t.common.adminRedirect || 'This app is for miners and traders. Please use the Admin Panel to manage the system.'}
@@ -269,25 +286,25 @@ function AppContent() {
   const traderTabs = [
     {
       label: t.nav.home,
-      icon: '\u{1F3E0}',
+      icon: Home,
       active: activeTab === 'home',
       onClick: () => setAppScreen('home'),
     },
     {
       label: t.nav.available,
-      icon: '\u{1F50D}',
+      icon: Search,
       active: activeTab === 'available-records',
       onClick: () => setAppScreen('available-records'),
     },
     {
       label: t.nav.purchases,
-      icon: '\u{1F6D2}',
+      icon: ShoppingCart,
       active: activeTab === 'purchases',
       onClick: () => setAppScreen('purchases'),
     },
     {
       label: t.nav.profile,
-      icon: '\u{1F464}',
+      icon: User,
       active: activeTab === 'profile',
       onClick: () => setAppScreen('profile'),
     },
@@ -296,31 +313,31 @@ function AppContent() {
   const minerTabs = [
     {
       label: t.nav.home,
-      icon: '\u{1F3E0}',
+      icon: Home,
       active: activeTab === 'home',
       onClick: () => setAppScreen('home'),
     },
     {
       label: t.nav.records,
-      icon: '\u{1F4CB}',
+      icon: ClipboardList,
       active: activeTab === 'records',
       onClick: () => setAppScreen('records'),
     },
     {
       label: t.nav.surveys,
-      icon: '\u{1F4DD}',
+      icon: FileText,
       active: activeTab === 'surveys',
       onClick: () => setAppScreen('surveys'),
     },
     {
       label: t.nav.partners,
-      icon: '\u{1F91D}',
+      icon: Handshake,
       active: activeTab === 'sales-partners',
       onClick: () => setAppScreen('sales-partners'),
     },
     {
       label: t.nav.profile,
-      icon: '\u{1F464}',
+      icon: User,
       active: activeTab === 'profile',
       onClick: () => setAppScreen('profile'),
     },

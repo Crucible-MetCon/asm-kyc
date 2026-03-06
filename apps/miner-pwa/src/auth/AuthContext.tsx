@@ -12,7 +12,9 @@ interface AuthState {
     password: string;
     phone_e164: string;
     full_name: string;
+    preferred_name?: string;
     counterparty_type: string;
+    home_language?: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -73,7 +75,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string;
     phone_e164: string;
     full_name: string;
+    preferred_name?: string;
     counterparty_type: string;
+    home_language?: string;
   }) => {
     const me = await apiFetch<MeResponse>('/auth/register', {
       method: 'POST',

@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const GenderEnum = z.enum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY']);
 export type Gender = z.infer<typeof GenderEnum>;
 
-export const LanguageEnum = z.enum(['en', 'bem']);
+export const LanguageEnum = z.enum(['en', 'bem', 'ton', 'nya', 'zh']);
 export type Language = z.infer<typeof LanguageEnum>;
 
 // Step 1: Personal Details

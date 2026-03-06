@@ -4,6 +4,7 @@ import type {
   EntityPackListResponse,
   EntityPackDownloadResponse,
 } from '@asm-kyc/shared';
+import { FolderOpen, Folder } from 'lucide-react';
 
 interface EntityPackScreenProps {
   onNavigateToUser: (userId: string) => void;
@@ -135,8 +136,8 @@ export function EntityPackScreen({ onNavigateToUser }: EntityPackScreenProps) {
                   }}
                   onClick={() => toggleFolder(folder.user_id)}
                 >
-                  <span style={{ fontSize: 20, lineHeight: 1 }}>
-                    {isExpanded ? '\u{1F4C2}' : '\u{1F4C1}'}
+                  <span style={{ color: 'var(--color-gold)', display: 'flex', alignItems: 'center' }}>
+                    {isExpanded ? <FolderOpen size={20} /> : <Folder size={20} />}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ fontWeight: 600, fontSize: 14 }}>

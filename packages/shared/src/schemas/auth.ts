@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
-export const RoleEnum = z.enum(['MINER_USER', 'TRADER_USER', 'REFINER_USER', 'AGGREGATOR_USER', 'MELTER_USER', 'ADMIN_USER']);
+export const RoleEnum = z.enum(['MINER_USER', 'AGGREGATOR_USER', 'MELTER_USER', 'PROCESSOR_USER', 'TRADER_USER', 'REFINER_USER', 'ADMIN_USER']);
 
 /** Roles that can be selected during self-registration (no admin) */
-export const RegistrationRoleEnum = z.enum(['MINER_USER', 'TRADER_USER', 'REFINER_USER', 'AGGREGATOR_USER', 'MELTER_USER']);
+export const RegistrationRoleEnum = z.enum(['MINER_USER', 'AGGREGATOR_USER', 'MELTER_USER', 'PROCESSOR_USER', 'TRADER_USER', 'REFINER_USER']);
 
 export const CounterpartyTypeEnum = z.enum([
   'INDIVIDUAL_ASM',
@@ -21,6 +21,7 @@ export const RegisterInputSchema = z.object({
   phone_e164: z.string().regex(/^\+[1-9]\d{6,14}$/, 'Phone must be in E.164 format (e.g. +260971234567)'),
   password: z.string().min(8, 'Password must be at least 8 characters').max(128),
   full_name: z.string().min(1, 'Full name is required').max(200),
+  preferred_name: z.string().max(100).optional(),
   counterparty_type: CounterpartyTypeEnum,
   role: RegistrationRoleEnum.default('MINER_USER'),
   home_language: z.string().default('en'),

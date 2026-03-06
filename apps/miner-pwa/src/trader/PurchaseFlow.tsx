@@ -3,6 +3,7 @@ import { apiFetch } from '../api/client';
 import { useI18n, interpolate } from '../i18n/I18nContext';
 import { useFeatureFlags } from '../config/FeatureFlagContext';
 import type { AvailableRecordListResponse, AvailableRecordListItem, PurchaseResponse } from '@asm-kyc/shared';
+import { Smartphone, Building2, CheckCircle, XCircle, Clock } from 'lucide-react';
 import rawGoldIcon from '../assets/gold-types/raw-gold.png';
 import barIcon from '../assets/gold-types/bar.png';
 import lotIcon from '../assets/gold-types/lot.png';
@@ -143,8 +144,8 @@ export function PurchaseFlow({ recordIds, onComplete, onBack }: Props) {
         </h1>
 
         <div className="payment-status-card">
-          <div className="payment-status-icon">
-            {paymentStatus === 'COMPLETED' ? '\u2705' : paymentStatus === 'FAILED' ? '\u274C' : '\u23F3'}
+          <div className="payment-status-icon" style={{ color: paymentStatus === 'COMPLETED' ? 'var(--color-success)' : paymentStatus === 'FAILED' ? 'var(--color-error)' : 'var(--color-warning)' }}>
+            {paymentStatus === 'COMPLETED' ? <CheckCircle size={32} /> : paymentStatus === 'FAILED' ? <XCircle size={32} /> : <Clock size={32} />}
           </div>
           <div className="payment-status-text">
             {paymentStatus === 'COMPLETED'
@@ -242,7 +243,7 @@ export function PurchaseFlow({ recordIds, onComplete, onBack }: Props) {
                 className={`payment-method-option ${paymentMethod === 'MOBILE_MONEY' ? 'selected' : ''}`}
                 onClick={() => setPaymentMethod('MOBILE_MONEY')}
               >
-                <span className="payment-method-icon">{'\uD83D\uDCF1'}</span>
+                <span className="payment-method-icon"><Smartphone size={20} /></span>
                 <span>{t.trader.mobileMoney}</span>
                 <span className="payment-method-fee">2% {t.trader.fee}</span>
               </button>
@@ -251,7 +252,7 @@ export function PurchaseFlow({ recordIds, onComplete, onBack }: Props) {
                 className={`payment-method-option ${paymentMethod === 'BANK_TRANSFER' ? 'selected' : ''}`}
                 onClick={() => setPaymentMethod('BANK_TRANSFER')}
               >
-                <span className="payment-method-icon">{'\uD83C\uDFE6'}</span>
+                <span className="payment-method-icon"><Building2 size={20} /></span>
                 <span>{t.trader.bankTransfer}</span>
                 <span className="payment-method-fee">1% {t.trader.fee}</span>
               </button>

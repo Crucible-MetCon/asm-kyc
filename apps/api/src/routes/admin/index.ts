@@ -10,6 +10,8 @@ import { adminRiskRoutes } from './risk.js';
 import { adminEntityPackRoutes } from './entity-pack.js';
 import { adminDocumentRoutes } from './documents.js';
 import { adminEntityPackBrowserRoutes } from './entity-packs.js';
+import { adminSupplyChainMapRoutes } from './supply-chain-map.js';
+import { adminTraceabilityRoutes } from './traceability.js';
 
 export const adminRoutes: FastifyPluginAsync = async (app) => {
   // All admin routes require authentication + ADMIN_USER role
@@ -25,4 +27,6 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
   await app.register(adminEntityPackRoutes, { prefix: '/users' });
   await app.register(adminDocumentRoutes, { prefix: '/users' });
   await app.register(adminEntityPackBrowserRoutes, { prefix: '/entity-packs' });
+  await app.register(adminSupplyChainMapRoutes, { prefix: '/supply-chain-map' });
+  await app.register(adminTraceabilityRoutes, { prefix: '/records' });
 };

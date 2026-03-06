@@ -27,6 +27,7 @@ export function serializeProfile(p: MinerProfile | null): UserProfile | null {
   if (!p) return null;
   return {
     full_name: p.full_name,
+    preferred_name: p.preferred_name ?? null,
     counterparty_type: p.counterparty_type,
     home_language: p.home_language,
     nrc_number: p.nrc_number,

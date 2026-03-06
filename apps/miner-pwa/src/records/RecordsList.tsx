@@ -6,6 +6,7 @@ import type { RecordListResponse, RecordListItem } from '@asm-kyc/shared';
 import rawGoldIcon from '../assets/gold-types/raw-gold.png';
 import barIcon from '../assets/gold-types/bar.png';
 import lotIcon from '../assets/gold-types/lot.png';
+import { ClipboardList, Camera } from 'lucide-react';
 
 const GOLD_TYPE_ICONS: Record<string, string> = {
   RAW_GOLD: rawGoldIcon,
@@ -78,7 +79,7 @@ export function RecordsList({ onCreateNew, onViewRecord }: Props) {
 
       {records.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">📋</div>
+          <div className="empty-state-icon"><ClipboardList size={32} /></div>
           <div className="empty-state-title">{t.records.noRecords}</div>
           <p className="empty-state-hint">{t.records.noRecordsHint}</p>
           <button type="button" className="btn btn-primary" onClick={onCreateNew}>
@@ -132,7 +133,7 @@ export function RecordsList({ onCreateNew, onViewRecord }: Props) {
                 </div>
                 <div className="record-card-meta">
                   {rec.origin_mine_site || '—'} · {formatDate(rec.updated_at)}
-                  {rec.photo_count > 0 && ` · 📷 ${rec.photo_count}`}
+                  {rec.photo_count > 0 && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 4 }}><Camera size={12} /> {rec.photo_count}</span>}
                 </div>
               </div>
               <span className={`status-badge status-${rec.status.toLowerCase()}`}>

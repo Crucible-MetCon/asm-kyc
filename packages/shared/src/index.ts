@@ -114,6 +114,12 @@ export {
   type EntityPackFolder,
   type EntityPackListResponse,
   type EntityPackDownloadResponse,
+  type SupplyChainActor,
+  type SupplyChainRecord,
+  type SupplyChainFlow,
+  type SupplyChainMapResponse,
+  type TraceabilityStep,
+  type TraceabilityPreview,
 } from './types/api.js';
 
 export {

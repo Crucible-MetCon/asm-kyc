@@ -1,3 +1,5 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 interface PaginationProps {
   page: number;
   totalPages: number;
@@ -15,6 +17,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 1}
       >
+        <ChevronLeft size={16} />
         Previous
       </button>
       <span className="pagination-info">
@@ -27,6 +30,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
         disabled={page >= totalPages}
       >
         Next
+        <ChevronRight size={16} />
       </button>
     </div>
   );

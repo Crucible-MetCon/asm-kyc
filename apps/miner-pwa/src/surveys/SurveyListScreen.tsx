@@ -4,6 +4,7 @@ import { apiFetch, NetworkError } from '../api/client';
 import { getListCache, setListCache } from '../offline/db';
 import { SURVEY_DEFINITIONS } from '@asm-kyc/shared';
 import type { SurveyListResponse, SurveyStatusResponse } from '@asm-kyc/shared';
+import { Home, Pickaxe, Globe, ShieldCheck, Truck, Scale, ClipboardList, type LucideIcon } from 'lucide-react';
 
 interface Props {
   onStartSurvey: (slug: string) => void;
@@ -23,13 +24,13 @@ function resolveKey(obj: Record<string, unknown>, key: string): string {
   return typeof current === 'string' ? current : key;
 }
 
-const SURVEY_ICONS: Record<string, string> = {
-  'about-you': '\u{1F3E0}',
-  'mining-operation': '\u26CF\uFE0F',
-  'environmental-practices': '\u{1F30D}',
-  'safety-rights': '\u{1F6E1}\uFE0F',
-  'gold-journey': '\u{1F69A}',
-  'governance-compliance': '\u{1F4DC}',
+const SURVEY_ICONS: Record<string, LucideIcon> = {
+  'about-you': Home,
+  'mining-operation': Pickaxe,
+  'environmental-practices': Globe,
+  'safety-rights': ShieldCheck,
+  'gold-journey': Truck,
+  'governance-compliance': Scale,
 };
 
 export function SurveyListScreen({ onStartSurvey }: Props) {
@@ -117,7 +118,7 @@ function SurveyCard({
   const desc = def
     ? resolveKey(t as unknown as Record<string, unknown>, def.i18nDescKey)
     : '';
-  const icon = SURVEY_ICONS[status.survey.slug] ?? '\u{1F4CB}';
+  const IconComponent = SURVEY_ICONS[status.survey.slug] ?? ClipboardList;
   const minutes = def?.estimatedMinutes ?? 3;
 
   return (
@@ -126,7 +127,7 @@ function SurveyCard({
       onClick={status.completed ? undefined : onStart}
       style={{ cursor: status.completed ? 'default' : 'pointer' }}
     >
-      <div className="survey-card-icon">{icon}</div>
+      <div className="survey-card-icon"><IconComponent size={22} /></div>
       <div className="survey-card-content">
         <div className="survey-card-header">
           <h3 className="survey-card-title">{title}</h3>

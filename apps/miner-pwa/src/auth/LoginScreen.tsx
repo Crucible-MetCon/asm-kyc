@@ -79,6 +79,16 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
             {t.auth.noAccount}
           </button>
         </div>
+
+        <div className="auth-footer" style={{ marginTop: 8 }}>
+          <a
+            href={import.meta.env.DEV ? 'http://127.0.0.1:5174/admin/' : '/admin/'}
+            className="btn btn-text"
+            style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}
+          >
+            Admin Portal
+          </a>
+        </div>
       </form>
     </div>
   );

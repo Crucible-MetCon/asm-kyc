@@ -10,10 +10,11 @@ datasource db {
 
 enum Role {
   MINER_USER
-  TRADER_USER
-  REFINER_USER
   AGGREGATOR_USER
   MELTER_USER
+  PROCESSOR_USER
+  TRADER_USER
+  REFINER_USER
   ADMIN_USER
 }
 
@@ -78,6 +79,7 @@ model MinerProfile {
   counterparty_type     CounterpartyType
   full_name             String           @db.VarChar(200)
   home_language         String           @default("en") @db.VarChar(10)
+  preferred_name        String?          @db.VarChar(100)
 
   // Phase 2: onboarding fields
   nrc_number            String?          @db.VarChar(30)

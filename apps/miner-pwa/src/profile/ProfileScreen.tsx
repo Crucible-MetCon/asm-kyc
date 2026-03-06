@@ -3,6 +3,7 @@ import { useI18n, interpolate, type Language } from '../i18n/I18nContext';
 import { apiFetch } from '../api/client';
 import type { UserProfile } from '@asm-kyc/shared';
 import { DocumentUpload } from './DocumentUpload';
+import { Pickaxe } from 'lucide-react';
 
 interface Props {
   onEdit: () => void;
@@ -78,25 +79,29 @@ export function ProfileScreen({ onEdit, onManageSites }: Props) {
 
       <div className="profile-section">
         <h2>{t.profile.language}</h2>
-        <div className="language-switcher">
-          <button
-            className={`btn ${lang === 'en' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => handleLanguageChange('en')}
-          >
-            {t.profile.languageEnglish}
-          </button>
-          <button
-            className={`btn ${lang === 'bem' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => handleLanguageChange('bem')}
-          >
-            {t.profile.languageBemba}
-          </button>
+        <div className="language-switcher language-switcher-5">
+          {([
+            { code: 'en' as Language, label: t.profile.languageEnglish },
+            { code: 'bem' as Language, label: t.profile.languageBemba },
+            { code: 'ton' as Language, label: t.profile.languageTonga },
+            { code: 'nya' as Language, label: t.profile.languageNyanja },
+            { code: 'zh' as Language, label: t.profile.languageChinese },
+          ]).map((opt) => (
+            <button
+              key={opt.code}
+              className={`btn ${lang === opt.code ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => handleLanguageChange(opt.code)}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
       <div className="profile-section">
         <h2>{t.profile.personalDetails}</h2>
         <ProfileField label={t.auth.fullName} value={profile?.full_name} t={t} />
+        <ProfileField label={t.auth.preferredName} value={profile?.preferred_name} t={t} />
         <ProfileField label={t.onboarding.nrcNumber} value={profile?.nrc_number} t={t} />
         <ProfileField
           label={t.onboarding.dateOfBirth}
@@ -135,7 +140,7 @@ export function ProfileScreen({ onEdit, onManageSites }: Props) {
           style={{ marginTop: 12, marginBottom: 4 }}
           onClick={onManageSites}
         >
-          {'\u26CF\uFE0F'} {t.mineSites.manageSites}
+          <Pickaxe size={16} /> {t.mineSites.manageSites}
         </button>
       )}
 

@@ -3,6 +3,7 @@ import { apiFetch, NetworkError } from '../api/client';
 import { useI18n } from '../i18n/I18nContext';
 import { setCachedRecordDetail, getCachedRecordDetail } from '../offline/db';
 import type { RecordResponse } from '@asm-kyc/shared';
+import { Scale, Microscope } from 'lucide-react';
 
 interface Props {
   recordId: string;
@@ -178,9 +179,9 @@ export function RecordDetail({ recordId, onBack, onEdit }: Props) {
       {(record.has_scale_photo || record.has_xrf_photo) && (
         <div className="profile-section">
           <h2>Capture Photos</h2>
-          <div style={{ display: 'flex', gap: 8, fontSize: 13, color: '#6b7280' }}>
-            {record.has_scale_photo && <span>⚖️ Scale photo captured</span>}
-            {record.has_xrf_photo && <span>🔬 XRF photo captured</span>}
+          <div style={{ display: 'flex', gap: 12, fontSize: 13, color: 'var(--color-text-secondary)' }}>
+            {record.has_scale_photo && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Scale size={14} /> Scale photo captured</span>}
+            {record.has_xrf_photo && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Microscope size={14} /> XRF photo captured</span>}
           </div>
         </div>
       )}

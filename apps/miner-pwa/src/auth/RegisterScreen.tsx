@@ -2,30 +2,68 @@ import { useState, type FormEvent } from 'react';
 import { useAuth } from './AuthContext';
 import { ApiError } from '../api/client';
 import { COUNTERPARTY_TYPES } from '@asm-kyc/shared';
-import { useI18n } from '../i18n/I18nContext';
+import { useI18n, type Language } from '../i18n/I18nContext';
+import {
+  Pickaxe,
+  Package,
+  Flame,
+  Factory,
+  ArrowLeftRight,
+  FlaskConical,
+  CreditCard,
+  BookOpen,
+  ScrollText,
+  Shield,
+  type LucideIcon,
+} from 'lucide-react';
 
 interface Props {
   onSwitchToLogin: () => void;
 }
 
-const ROLE_OPTIONS = [
-  { value: 'MINER_USER', labelKey: 'roleMiner' as const },
-  { value: 'TRADER_USER', labelKey: 'roleTrader' as const },
-  { value: 'AGGREGATOR_USER', labelKey: 'roleAggregator' as const },
-  { value: 'REFINER_USER', labelKey: 'roleRefiner' as const },
-  { value: 'MELTER_USER', labelKey: 'roleMelter' as const },
+const LANGUAGE_OPTIONS: { code: Language; nativeName: string }[] = [
+  { code: 'en', nativeName: 'English' },
+  { code: 'bem', nativeName: 'Ichibemba' },
+  { code: 'ton', nativeName: 'Chitonga' },
+  { code: 'nya', nativeName: 'Chinyanja' },
+  { code: 'zh', nativeName: '简体中文' },
+];
+
+const ROLE_OPTIONS: { value: string; labelKey: 'roleMiner' | 'roleTrader' | 'roleAggregator' | 'roleRefiner' | 'roleMelter' | 'roleProcessor'; descKey: 'roleDescMiner' | 'roleDescTrader' | 'roleDescAggregator' | 'roleDescRefiner' | 'roleDescMelter' | 'roleDescProcessor'; icon: LucideIcon }[] = [
+  { value: 'MINER_USER', labelKey: 'roleMiner', descKey: 'roleDescMiner', icon: Pickaxe },
+  { value: 'AGGREGATOR_USER', labelKey: 'roleAggregator', descKey: 'roleDescAggregator', icon: Package },
+  { value: 'MELTER_USER', labelKey: 'roleMelter', descKey: 'roleDescMelter', icon: Flame },
+  { value: 'PROCESSOR_USER', labelKey: 'roleProcessor', descKey: 'roleDescProcessor', icon: Factory },
+  { value: 'TRADER_USER', labelKey: 'roleTrader', descKey: 'roleDescTrader', icon: ArrowLeftRight },
+  { value: 'REFINER_USER', labelKey: 'roleRefiner', descKey: 'roleDescRefiner', icon: FlaskConical },
+];
+
+interface DocInfo {
+  labelKey: 'docNrc' | 'docMiningLicense' | 'docPassport' | 'docCooperativeCert';
+  icon: LucideIcon;
+  required: boolean;
+  roles?: string[];
+}
+
+const DOC_INFO: DocInfo[] = [
+  { labelKey: 'docNrc', icon: CreditCard, required: true },
+  { labelKey: 'docMiningLicense', icon: Pickaxe, required: false, roles: ['MINER_USER'] },
+  { labelKey: 'docPassport', icon: BookOpen, required: false },
+  { labelKey: 'docCooperativeCert', icon: ScrollText, required: false, roles: ['MINER_USER'] },
 ];
 
 export function RegisterScreen({ onSwitchToLogin }: Props) {
   const { register } = useAuth();
-  const { t } = useI18n();
+  const { t, lang, setLang } = useI18n();
   const [form, setForm] = useState({
     username: '',
     password: '',
     phone_e164: '',
     full_name: '',
+    preferred_name: '',
     counterparty_type: 'INDIVIDUAL_ASM',
     role: 'MINER_USER',
+    home_language: 'en',
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -34,7 +72,18 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleLanguageSelect = (code: Language) => {
+    setLang(code);
+    update('home_language', code);
+  };
+
   const isMiner = form.role === 'MINER_USER';
+
+  const relevantDocs = DOC_INFO.filter(
+    (d) => !d.roles || d.roles.includes(form.role),
+  );
+  const requiredDocs = relevantDocs.filter((d) => d.required);
+  const optionalDocs = relevantDocs.filter((d) => !d.required);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -43,7 +92,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
     try {
       await register({
         ...form,
-        // Non-miners get a default counterparty type
+        preferred_name: form.preferred_name || undefined,
         counterparty_type: isMiner ? form.counterparty_type : 'TRADER_AGGREGATOR',
       });
     } catch (err) {
@@ -67,7 +116,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
 
   return (
     <div className="screen screen-centered">
-      <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 400 }}>
+      <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 440 }}>
         <div className="auth-header">
           <img src="/favicon.svg" alt="ASM Gold Trace" className="auth-logo" />
           <h1>{t.auth.createAccount}</h1>
@@ -76,23 +125,93 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
 
         {error && <div className="error-message">{error}</div>}
 
-        {/* Role selector */}
+        {/* ── Section 1: Language Selection ── */}
         <div className="form-group">
-          <label>{t.auth.role}</label>
-          <div className="role-selector">
-            {ROLE_OPTIONS.map((opt) => (
+          <label>{t.auth.selectLanguage}</label>
+          <div className="language-grid">
+            {LANGUAGE_OPTIONS.map((opt) => (
               <button
-                key={opt.value}
+                key={opt.code}
                 type="button"
-                className={`role-option${form.role === opt.value ? ' role-option-active' : ''}`}
-                onClick={() => update('role', opt.value)}
+                className={`language-option${lang === opt.code ? ' language-option-active' : ''}`}
+                onClick={() => handleLanguageSelect(opt.code)}
               >
-                {t.auth[opt.labelKey]}
+                {opt.nativeName}
               </button>
             ))}
           </div>
         </div>
 
+        {/* ── Section 2: Role Selection ── */}
+        <div className="form-group">
+          <label>{t.auth.selectRole}</label>
+          <div className="role-card-list">
+            {ROLE_OPTIONS.map((opt) => {
+              const Icon = opt.icon;
+              const isActive = form.role === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`role-card${isActive ? ' role-card-active' : ''}`}
+                  onClick={() => update('role', opt.value)}
+                >
+                  <span className="role-card-icon">
+                    <Icon size={22} strokeWidth={2} />
+                  </span>
+                  <span className="role-card-info">
+                    <span className="role-card-name">{t.auth[opt.labelKey]}</span>
+                    <span className="role-card-desc">{t.auth[opt.descKey]}</span>
+                  </span>
+                  <span className={`role-card-radio${isActive ? ' role-card-radio-active' : ''}`} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Section 3: Document Info ── */}
+        <div className="form-group">
+          <label>{t.auth.documentsNeeded}</label>
+          <div className="doc-info-card">
+            <div className="doc-info-security">
+              <Shield size={16} />
+              <span>{t.auth.documentsNeededHint}</span>
+            </div>
+
+            {requiredDocs.length > 0 && (
+              <div className="doc-info-section">
+                <span className="doc-info-label">{t.auth.requiredDocuments}</span>
+                {requiredDocs.map((doc) => {
+                  const DocIcon = doc.icon;
+                  return (
+                    <div key={doc.labelKey} className="doc-info-row">
+                      <DocIcon size={16} />
+                      <span>{t.auth[doc.labelKey]}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {optionalDocs.length > 0 && (
+              <div className="doc-info-section">
+                <span className="doc-info-label">{t.auth.optionalDocuments}</span>
+                {optionalDocs.map((doc) => {
+                  const DocIcon = doc.icon;
+                  return (
+                    <div key={doc.labelKey} className="doc-info-row">
+                      <DocIcon size={16} />
+                      <span>{t.auth[doc.labelKey]}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Section 4: Registration Fields ── */}
         <div className="form-group">
           <label htmlFor="full_name">{t.auth.fullName}</label>
           <input
@@ -102,6 +221,20 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
             value={form.full_name}
             onChange={(e) => update('full_name', e.target.value)}
             required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="preferred_name">
+            {t.auth.preferredName}
+            <span className="form-hint"> — {t.auth.preferredNameHint}</span>
+          </label>
+          <input
+            id="preferred_name"
+            type="text"
+            className="form-input"
+            value={form.preferred_name}
+            onChange={(e) => update('preferred_name', e.target.value)}
           />
         </div>
 
@@ -145,7 +278,6 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
           />
         </div>
 
-        {/* Only show counterparty type for miners */}
         {isMiner && (
           <div className="form-group">
             <label htmlFor="counterparty_type">{t.auth.type}</label>

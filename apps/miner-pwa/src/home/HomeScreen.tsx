@@ -1,6 +1,7 @@
 import { useAuth } from '../auth/AuthContext';
 import { useI18n, interpolate } from '../i18n/I18nContext';
 import { PlaceholderCard } from './PlaceholderCard';
+import { User, PlusCircle, ClipboardList, FileText, Handshake, AlertTriangle } from 'lucide-react';
 
 interface Props {
   onNavigate: (screen: string) => void;
@@ -17,7 +18,7 @@ export function HomeScreen({ onNavigate }: Props) {
         <div>
           <h1>
             {interpolate(t.home.greeting, {
-              name: user?.profile?.full_name || user?.username || '',
+              name: user?.profile?.preferred_name || user?.profile?.full_name || user?.username || '',
             })}
           </h1>
           <p className="subtitle">
@@ -32,10 +33,12 @@ export function HomeScreen({ onNavigate }: Props) {
       {needsOnboarding && (
         <div
           className="card"
-          style={{ marginTop: 16, borderColor: 'var(--color-gold)', cursor: 'pointer' }}
+          style={{ marginTop: 16, borderColor: 'var(--color-warning)', cursor: 'pointer' }}
           onClick={() => onNavigate('onboarding')}
         >
-          <span className="card-icon">&#9888;&#65039;</span>
+          <span className="card-icon" style={{ color: 'var(--color-warning)' }}>
+            <AlertTriangle size={22} />
+          </span>
           <div className="card-content">
             <div className="card-title">{t.home.completeProfile}</div>
           </div>
@@ -45,31 +48,31 @@ export function HomeScreen({ onNavigate }: Props) {
       <div className="card-grid">
         <PlaceholderCard
           title={t.home.myProfile}
-          icon="👤"
+          icon={User}
           subtitle={t.home.viewProfile}
           onClick={() => onNavigate('profile')}
         />
         <PlaceholderCard
           title={t.home.newRecord}
-          icon="➕"
+          icon={PlusCircle}
           subtitle={t.home.createRecord}
           onClick={() => onNavigate('record-create')}
         />
         <PlaceholderCard
           title={t.home.myRecords}
-          icon="📋"
+          icon={ClipboardList}
           subtitle={t.home.viewRecords}
           onClick={() => onNavigate('records')}
         />
         <PlaceholderCard
           title={t.surveys.title}
-          icon="📝"
+          icon={FileText}
           subtitle={t.surveys.subtitle}
           onClick={() => onNavigate('surveys')}
         />
         <PlaceholderCard
           title={t.salesPartners.managePartners}
-          icon="🤝"
+          icon={Handshake}
           subtitle={t.salesPartners.managePartnersSubtitle}
           onClick={() => onNavigate('sales-partners')}
         />

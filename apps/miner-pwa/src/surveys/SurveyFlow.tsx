@@ -5,6 +5,7 @@ import { getSurveyBySlug, getVisibleQuestions } from '@asm-kyc/shared';
 import type { SurveyDef, SurveyQuestionDef } from '@asm-kyc/shared';
 import { SurveyQuestion } from './SurveyQuestion';
 import { SurveyProgressBar } from './SurveyProgressBar';
+import { PartyPopper } from 'lucide-react';
 import { getListCache, setListCache } from '../offline/db';
 
 interface Props {
@@ -174,7 +175,7 @@ export function SurveyFlow({ slug, onComplete, onBack }: Props) {
   if (completed) {
     return (
       <div className="survey-thankyou">
-        <div className="survey-thankyou-icon">&#127881;</div>
+        <div className="survey-thankyou-icon"><PartyPopper size={40} /></div>
         <h2>{t.surveys.thankYou}</h2>
         <p>{t.surveys.thankYouMessage}</p>
         {rewardAmount !== null && (

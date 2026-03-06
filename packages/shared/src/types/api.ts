@@ -6,6 +6,7 @@ export interface ApiError {
 
 export interface UserProfile {
   full_name: string;
+  preferred_name: string | null;
   counterparty_type: string;
   home_language: string;
   nrc_number: string | null;
@@ -211,6 +212,7 @@ export interface AdminDashboardStats {
   total_refiners: number;
   total_aggregators: number;
   total_melters: number;
+  total_processors: number;
   total_records: number;
   records_by_status: { status: string; count: number }[];
   total_purchases: number;
@@ -521,4 +523,94 @@ export interface EntityPackListResponse {
 
 export interface EntityPackDownloadResponse {
   url: string;
+}
+
+// Phase 10: Supply Chain Map types
+
+export interface SupplyChainActor {
+  userId: string;
+  name: string;
+  role: string;
+  lat: number;
+  lng: number;
+  recordCount: number;
+  totalWeight: number;
+}
+
+export interface SupplyChainRecord {
+  id: string;
+  recordNumber: string | null;
+  status: string;
+  weight: number | null;
+  goldType: string | null;
+  lat: number;
+  lng: number;
+  minerName: string;
+}
+
+export interface SupplyChainFlow {
+  fromLat: number;
+  fromLng: number;
+  toLat: number;
+  toLng: number;
+  weight: number | null;
+  status: string;
+  recordNumber: string | null;
+  minerName: string;
+  buyerName: string;
+}
+
+export interface SupplyChainMapResponse {
+  actors: SupplyChainActor[];
+  records: SupplyChainRecord[];
+  flows: SupplyChainFlow[];
+}
+
+// Phase 10: Traceability Report types
+
+export interface TraceabilityStep {
+  step_number: number;
+  actor_name: string;
+  actor_role: string;
+  action: string;
+  weight_grams: number | null;
+  purity_au: number | null;
+  gps_latitude: number | null;
+  gps_longitude: number | null;
+  country: string | null;
+  locality: string | null;
+  timestamp: string;
+}
+
+export interface TraceabilityPreview {
+  record_id: string;
+  record_number: string | null;
+  doc_code: string;
+  current_status: string;
+  gold_type: string | null;
+  origin: {
+    miner_name: string;
+    mine_site_name: string | null;
+    extraction_date: string | null;
+    weight_grams: number | null;
+    estimated_purity: number | null;
+    gps_latitude: number | null;
+    gps_longitude: number | null;
+    country: string | null;
+    locality: string | null;
+  };
+  chain_of_custody: TraceabilityStep[];
+  combinations: {
+    purchase_id: string;
+    trader_name: string;
+    purchased_at: string;
+    total_weight: number;
+    other_records: { record_number: string | null; weight_grams: number | null }[];
+  }[];
+  weight_history: {
+    stage: string;
+    weight_grams: number | null;
+    actor: string;
+    timestamp: string;
+  }[];
 }

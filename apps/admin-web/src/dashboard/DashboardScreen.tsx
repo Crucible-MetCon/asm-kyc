@@ -43,7 +43,7 @@ export function DashboardScreen({ onNavigateRecords, onNavigateCompliance, onNav
           <div className="stat-value">{stats.total_users}</div>
           <div className="stat-label">Total Users</div>
           <div className="stat-breakdown">
-            {stats.total_miners} miners, {stats.total_traders} traders, {stats.total_refiners} refiners, {stats.total_aggregators ?? 0} aggregators, {stats.total_melters ?? 0} melters
+            {stats.total_miners} miners, {stats.total_traders} traders, {stats.total_refiners} refiners, {stats.total_aggregators ?? 0} aggregators, {stats.total_melters ?? 0} melters, {stats.total_processors ?? 0} processors
           </div>
         </button>
 

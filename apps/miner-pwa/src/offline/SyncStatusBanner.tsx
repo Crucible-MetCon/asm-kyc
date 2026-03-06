@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useOnlineStatus } from './connectivity';
 import { getPendingSyncCount } from './db';
 import { useI18n } from '../i18n/I18nContext';
+import { WifiOff, RefreshCw, XCircle } from 'lucide-react';
 
 export type SyncState = 'online' | 'offline' | 'syncing' | 'error';
 
@@ -73,19 +74,19 @@ export function SyncStatusBanner() {
     <div className={bannerClass} role="status" aria-live="polite">
       {syncState === 'offline' && (
         <>
-          <span className="sync-banner__icon">&#x26A0;</span>
+          <span className="sync-banner__icon"><WifiOff size={16} /></span>
           <span>{t.sync.offline}</span>
         </>
       )}
       {syncState === 'syncing' && (
         <>
-          <span className="sync-banner__icon sync-banner__icon--spin">&#x21BB;</span>
+          <span className="sync-banner__icon sync-banner__icon--spin"><RefreshCw size={16} /></span>
           <span>{t.sync.syncing.replace('{n}', String(pendingCount))}</span>
         </>
       )}
       {syncState === 'error' && (
         <>
-          <span className="sync-banner__icon">&#x274C;</span>
+          <span className="sync-banner__icon"><XCircle size={16} /></span>
           <span>{t.sync.error}</span>
           <button className="sync-banner__retry" onClick={handleRetry}>
             {t.sync.retry}

@@ -11,6 +11,7 @@ import { RecordDetailScreen } from './records/RecordDetailScreen';
 import { ComplianceScreen } from './compliance/ComplianceScreen';
 import { SurveyManagementScreen } from './surveys/SurveyManagementScreen';
 import { EntityPackScreen } from './entity-packs/EntityPackScreen';
+import { SupplyChainMapScreen } from './supply-chain-map/SupplyChainMapScreen';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -84,6 +85,8 @@ function AppContent() {
         return <SurveyManagementScreen />;
       case 'entity-packs':
         return <EntityPackScreen onNavigateToUser={navigateToUser} />;
+      case 'supply-chain-map':
+        return <SupplyChainMapScreen />;
       default:
         return null;
     }

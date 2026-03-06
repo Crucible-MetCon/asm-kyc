@@ -3,12 +3,13 @@ import { useI18n } from '../i18n/I18nContext';
 import { apiFetch } from '../api/client';
 import { DOCUMENT_TYPES } from '@asm-kyc/shared';
 import type { DocumentListResponse, DocumentResponse } from '@asm-kyc/shared';
+import { CreditCard, Pickaxe, BookOpen, ScrollText, FileText, type LucideIcon } from 'lucide-react';
 
-const DOC_TYPE_LABELS: Record<string, { label: string; icon: string }> = {
-  NRC: { label: 'National Registration Card', icon: '🪪' },
-  MINING_LICENSE: { label: 'Mining License', icon: '⛏️' },
-  PASSPORT: { label: 'Passport', icon: '🛂' },
-  COOPERATIVE_CERT: { label: 'Cooperative Certificate', icon: '📜' },
+const DOC_TYPE_LABELS: Record<string, { label: string; icon: LucideIcon }> = {
+  NRC: { label: 'National Registration Card', icon: CreditCard },
+  MINING_LICENSE: { label: 'Mining License', icon: Pickaxe },
+  PASSPORT: { label: 'Passport', icon: BookOpen },
+  COOPERATIVE_CERT: { label: 'Cooperative Certificate', icon: ScrollText },
 };
 
 export function DocumentUpload() {
@@ -78,7 +79,7 @@ export function DocumentUpload() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {DOCUMENT_TYPES.map((docType) => {
           const doc = getDocByType(docType);
-          const meta = DOC_TYPE_LABELS[docType] || { label: docType, icon: '📄' };
+          const meta = DOC_TYPE_LABELS[docType] || { label: docType, icon: FileText };
           const isUploading = uploading === docType;
 
           return (
@@ -95,7 +96,9 @@ export function DocumentUpload() {
                 background: doc ? '#f0fdf4' : '#fff',
               }}
             >
-              <span style={{ fontSize: 24 }}>{meta.icon}</span>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, background: doc ? '#dcfce7' : 'var(--color-surface-secondary)', borderRadius: 'var(--radius)', color: doc ? 'var(--color-success)' : 'var(--color-text-secondary)' }}>
+                <meta.icon size={20} />
+              </span>
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{meta.label}</div>

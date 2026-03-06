@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
-import type { AdminRecordDetail, ComplianceReviewResponse } from '@asm-kyc/shared';
+import type { AdminRecordDetail, ComplianceReviewResponse, TraceabilityPreview } from '@asm-kyc/shared';
 import { StatusBadge } from '../components/StatusBadge';
+import { CheckCircle, AlertTriangle, Route, FileText, MapPin, Scale, ArrowRight } from 'lucide-react';
 
 interface RecordDetailScreenProps {
   recordId: string;
@@ -17,6 +18,39 @@ export function RecordDetailScreen({ recordId, onBack }: RecordDetailScreenProps
   const [reviewNotes, setReviewNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [photoModal, setPhotoModal] = useState<string | null>(null);
+
+  // Traceability state
+  const [tracePreview, setTracePreview] = useState<TraceabilityPreview | null>(null);
+  const [traceLoading, setTraceLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const loadTraceability = async () => {
+    setTraceLoading(true);
+    try {
+      const res = await apiFetch<TraceabilityPreview>(`/admin/records/${recordId}/traceability`);
+      setTracePreview(res);
+    } catch {
+      // ignore
+    } finally {
+      setTraceLoading(false);
+    }
+  };
+
+  const handleGeneratePdf = async () => {
+    setPdfLoading(true);
+    try {
+      const res = await apiFetch<{ url?: string; doc_code: string }>(`/admin/records/${recordId}/traceability/pdf`, {
+        method: 'POST',
+      });
+      if (res.url) {
+        window.open(res.url, '_blank');
+      }
+    } catch {
+      // ignore
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   const loadRecord = async () => {
     setLoading(true);
@@ -175,11 +209,11 @@ export function RecordDetailScreen({ recordId, onBack }: RecordDetailScreenProps
             )}
             <div className="detail-field">
               <label>Scale Photo</label>
-              <div className="value">{record.has_scale_photo ? '✅ Captured' : '—'}</div>
+              <div className="value">{record.has_scale_photo ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CheckCircle size={14} style={{ color: 'var(--color-success)' }} /> Captured</span> : '—'}</div>
             </div>
             <div className="detail-field">
               <label>XRF Photo</label>
-              <div className="value">{record.has_xrf_photo ? '✅ Captured' : '—'}</div>
+              <div className="value">{record.has_xrf_photo ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CheckCircle size={14} style={{ color: 'var(--color-success)' }} /> Captured</span> : '—'}</div>
             </div>
           </div>
           {record.metal_purities && record.metal_purities.length > 0 && (
@@ -223,7 +257,7 @@ export function RecordDetailScreen({ recordId, onBack }: RecordDetailScreenProps
                     <div className="value">
                       {receipt.receipt_weight}g
                       {record.weight_grams != null && Math.abs(receipt.receipt_weight - record.weight_grams) / record.weight_grams > 0.05 && (
-                        <span style={{ color: '#dc2626', fontWeight: 600, marginLeft: '8px' }}>⚠️ Discrepancy</span>
+                        <span style={{ color: '#dc2626', fontWeight: 600, marginLeft: '8px', display: 'inline-flex', alignItems: 'center', gap: 4 }}><AlertTriangle size={14} /> Discrepancy</span>
                       )}
                     </div>
                   </div>
@@ -279,6 +313,152 @@ export function RecordDetailScreen({ recordId, onBack }: RecordDetailScreenProps
           </div>
         </div>
       )}
+
+      {/* Traceability Report */}
+      <div className="card">
+        <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Route size={18} />
+          Traceability Report
+        </h2>
+
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={loadTraceability}
+            disabled={traceLoading}
+          >
+            {traceLoading ? 'Loading...' : 'Preview Chain'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={handleGeneratePdf}
+            disabled={pdfLoading}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <FileText size={14} />
+            {pdfLoading ? 'Generating...' : 'Generate PDF Report'}
+          </button>
+        </div>
+
+        {tracePreview && (
+          <div className="trace-preview">
+            {/* Doc code */}
+            <div className="trace-doc-code">
+              Document Code: <span className="trace-doc-code-value">{tracePreview.doc_code}</span>
+            </div>
+
+            {/* Origin */}
+            <div className="trace-section">
+              <h3 className="trace-section-title">Origin</h3>
+              <div className="detail-grid">
+                <div className="detail-field">
+                  <label>Miner</label>
+                  <div className="value">{tracePreview.origin.miner_name}</div>
+                </div>
+                <div className="detail-field">
+                  <label>Mine Site</label>
+                  <div className="value">{tracePreview.origin.mine_site_name ?? '—'}</div>
+                </div>
+                <div className="detail-field">
+                  <label>Weight</label>
+                  <div className="value">{tracePreview.origin.weight_grams ? `${tracePreview.origin.weight_grams}g` : '—'}</div>
+                </div>
+                <div className="detail-field">
+                  <label>Purity</label>
+                  <div className="value">{tracePreview.origin.estimated_purity ? `${tracePreview.origin.estimated_purity}%` : '—'}</div>
+                </div>
+                {tracePreview.origin.country && (
+                  <div className="detail-field">
+                    <label>Location</label>
+                    <div className="value" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <MapPin size={14} />
+                      {tracePreview.origin.locality ? `${tracePreview.origin.locality}, ${tracePreview.origin.country}` : tracePreview.origin.country}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Chain of Custody Timeline */}
+            <div className="trace-section">
+              <h3 className="trace-section-title">Chain of Custody</h3>
+              <div className="trace-timeline">
+                {tracePreview.chain_of_custody.map((step) => (
+                  <div key={step.step_number} className="trace-step">
+                    <div className="trace-step-marker">
+                      <div className="trace-step-number">{step.step_number}</div>
+                    </div>
+                    <div className="trace-step-content">
+                      <div className="trace-step-header">
+                        <strong>{step.actor_name}</strong>
+                        <span className="trace-step-role">{step.actor_role}</span>
+                      </div>
+                      <div className="trace-step-details">
+                        <span>{step.action === 'ORIGIN' ? 'Extracted / Created' : 'Received Material'}</span>
+                        {step.weight_grams != null && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Scale size={12} /> {step.weight_grams}g
+                          </span>
+                        )}
+                        {step.country && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <MapPin size={12} /> {step.locality ? `${step.locality}, ${step.country}` : step.country}
+                          </span>
+                        )}
+                        <span>{new Date(step.timestamp).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Weight History */}
+            {tracePreview.weight_history.length > 1 && (
+              <div className="trace-section">
+                <h3 className="trace-section-title">Weight Tracking</h3>
+                <div className="trace-weight-flow">
+                  {tracePreview.weight_history.map((entry, idx) => (
+                    <div key={idx} className="trace-weight-item">
+                      {idx > 0 && <ArrowRight size={16} className="trace-weight-arrow" />}
+                      <div className="trace-weight-box">
+                        <div className="trace-weight-value">{entry.weight_grams ? `${entry.weight_grams}g` : '—'}</div>
+                        <div className="trace-weight-label">{entry.stage}</div>
+                        <div className="trace-weight-actor">{entry.actor}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Combinations */}
+            {tracePreview.combinations.length > 0 && (
+              <div className="trace-section">
+                <h3 className="trace-section-title">Material Combinations</h3>
+                {tracePreview.combinations.map((combo) => (
+                  <div key={combo.purchase_id} style={{ padding: '12px', background: '#f9fafb', borderRadius: '8px', marginBottom: '8px' }}>
+                    <div><strong>Purchased by:</strong> {combo.trader_name} on {new Date(combo.purchased_at).toLocaleDateString()}</div>
+                    <div><strong>Combined weight:</strong> {combo.total_weight}g</div>
+                    {combo.other_records.length > 0 && (
+                      <div style={{ marginTop: '8px' }}>
+                        <strong>Other records in this purchase:</strong>
+                        <ul style={{ margin: '4px 0 0 20px', fontSize: '13px' }}>
+                          {combo.other_records.map((r, i) => (
+                            <li key={i}>{r.record_number ?? 'Unassigned'} — {r.weight_grams ? `${r.weight_grams}g` : 'N/A'}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Compliance Review History */}
       <div className="card">

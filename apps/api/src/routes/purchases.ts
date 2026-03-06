@@ -15,7 +15,7 @@ export const purchaseRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /purchases — list trader's/refiner's purchases
   app.get('/', {
-    preHandler: [requireRole('TRADER_USER', 'REFINER_USER')],
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER', 'PROCESSOR_USER')],
     handler: async (request, reply) => {
       const user = request.user!;
 
@@ -36,7 +36,7 @@ export const purchaseRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /purchases/:id — purchase detail with linked records
   app.get<{ Params: { id: string } }>('/:id', {
-    preHandler: [requireRole('TRADER_USER', 'REFINER_USER')],
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER', 'PROCESSOR_USER')],
     handler: async (request, reply) => {
       const user = request.user!;
 
@@ -77,7 +77,7 @@ export const purchaseRoutes: FastifyPluginAsync = async (app) => {
 
   // GET /purchases/:id/payment-status — poll payment status
   app.get<{ Params: { id: string } }>('/:id/payment-status', {
-    preHandler: [requireRole('TRADER_USER', 'REFINER_USER')],
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER', 'PROCESSOR_USER')],
     handler: async (request, reply) => {
       const user = request.user!;
 
@@ -115,7 +115,7 @@ export const purchaseRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /purchases — create a purchase (atomic transaction)
   app.post('/', {
-    preHandler: [requireRole('TRADER_USER', 'REFINER_USER')],
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER', 'PROCESSOR_USER')],
     handler: async (request, reply) => {
       const parsed = PurchaseCreateSchema.safeParse(request.body);
       if (!parsed.success) {

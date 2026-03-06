@@ -5,6 +5,7 @@ import { apiFetch, NetworkError } from '../api/client';
 import { setListCache, getListCache } from '../offline/db';
 import type { PurchaseListResponse, PurchaseListItem } from '@asm-kyc/shared';
 import { PlaceholderCard } from '../home/PlaceholderCard';
+import { Search, ShoppingCart, User, AlertTriangle } from 'lucide-react';
 
 interface Props {
   onNavigate: (screen: string) => void;
@@ -46,7 +47,7 @@ export function TraderHomeScreen({ onNavigate }: Props) {
         <div>
           <h1>
             {interpolate(t.home.greeting, {
-              name: user?.profile?.full_name || user?.username || '',
+              name: user?.profile?.preferred_name || user?.profile?.full_name || user?.username || '',
             })}
           </h1>
           <p className="subtitle">{user?.role === 'REFINER_USER' ? t.trader.refinerDashboard : t.trader.dashboard}</p>
@@ -59,10 +60,12 @@ export function TraderHomeScreen({ onNavigate }: Props) {
       {needsOnboarding && (
         <div
           className="card"
-          style={{ marginTop: 16, borderColor: 'var(--color-gold)', cursor: 'pointer' }}
+          style={{ marginTop: 16, borderColor: 'var(--color-warning)', cursor: 'pointer' }}
           onClick={() => onNavigate('onboarding')}
         >
-          <span className="card-icon">&#9888;&#65039;</span>
+          <span className="card-icon" style={{ color: 'var(--color-warning)' }}>
+            <AlertTriangle size={22} />
+          </span>
           <div className="card-content">
             <div className="card-title">{t.home.completeProfile}</div>
           </div>
@@ -83,19 +86,19 @@ export function TraderHomeScreen({ onNavigate }: Props) {
       <div className="card-grid">
         <PlaceholderCard
           title={t.trader.browseAvailable}
-          icon="🔍"
+          icon={Search}
           subtitle={t.trader.browseSubtitle}
           onClick={() => onNavigate('available-records')}
         />
         <PlaceholderCard
           title={t.trader.myPurchases}
-          icon="🛒"
+          icon={ShoppingCart}
           subtitle={t.trader.viewPurchases}
           onClick={() => onNavigate('purchases')}
         />
         <PlaceholderCard
           title={t.home.myProfile}
-          icon="👤"
+          icon={User}
           subtitle={t.home.viewProfile}
           onClick={() => onNavigate('profile')}
         />

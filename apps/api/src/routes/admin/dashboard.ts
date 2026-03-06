@@ -12,6 +12,7 @@ export const adminDashboardRoutes: FastifyPluginAsync = async (app) => {
       totalRefiners,
       totalAggregators,
       totalMelters,
+      totalProcessors,
       totalRecords,
       recordsByStatus,
       totalPurchases,
@@ -28,6 +29,7 @@ export const adminDashboardRoutes: FastifyPluginAsync = async (app) => {
       prisma.user.count({ where: { role: 'REFINER_USER' } }),
       prisma.user.count({ where: { role: 'AGGREGATOR_USER' } }),
       prisma.user.count({ where: { role: 'MELTER_USER' } }),
+      prisma.user.count({ where: { role: 'PROCESSOR_USER' } }),
       prisma.record.count(),
       prisma.record.groupBy({ by: ['status'], _count: { _all: true } }),
       prisma.purchase.count(),
@@ -46,6 +48,7 @@ export const adminDashboardRoutes: FastifyPluginAsync = async (app) => {
       total_refiners: totalRefiners,
       total_aggregators: totalAggregators,
       total_melters: totalMelters,
+      total_processors: totalProcessors,
       total_records: totalRecords,
       records_by_status: recordsByStatus.map((r) => ({
         status: r.status,

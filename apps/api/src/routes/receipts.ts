@@ -8,7 +8,7 @@ export const receiptRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /records/:id/receipt — create a receipt for a record
   app.post<{ Params: { id: string } }>('/:id/receipt', {
-    preHandler: [requireRole('TRADER_USER', 'REFINER_USER')],
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER', 'PROCESSOR_USER')],
     handler: async (request, reply) => {
       const user = request.user!;
       const recordId = request.params.id;

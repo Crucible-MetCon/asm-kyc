@@ -156,3 +156,8 @@ export async function listR2Objects(prefix: string): Promise<R2Object[]> {
 export function buildEntityPackKey(userId: string, filename: string): string {
   return `entity-packs/${userId}/${filename}`;
 }
+
+/** Build an R2 key for a traceability report PDF. */
+export function buildTraceabilityReportKey(recordId: string, docCode: string): string {
+  return `traceability-reports/${recordId}/${docCode}.pdf`;
+}

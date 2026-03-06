@@ -37,7 +37,7 @@ export const surveyRoutes: FastifyPluginAsync = async (app) => {
       const rewardAmount = Number(dbSurvey.reward_amount);
 
       if (response?.reward) {
-        if (response.reward.status === 'PAID') {
+        if (response.reward.status === 'PAID' || response.reward.status === 'PENDING') {
           totalEarned += Number(response.reward.amount);
         }
       }

@@ -57,6 +57,10 @@ export const ton: TranslationKeys = {
     docPassport: 'Pasipoti',
     docCooperativeCert: 'Setifiketi ya Kooperativu',
     docNameMismatch: 'Zina lipati pepa eeli talilikizyene azina ndyomwakaamba. Amulange-lange zina lyanu lyoonse.',
+    docsCanCompleteLater: 'Mulakonzya kumana eci kumbele mu Profile yenu.',
+    tapToUpload: 'Amutume naa mufote cifanikiso',
+    upload: 'Tumizya',
+    uploadingDocuments: 'Kutumizya ziilembo...',
     docDobMismatch: 'Buzuba bwakuzyalwa buli pepa eeli tabwaalikizyene. Amulange-lange buzuba bwakuzyalwa bwanu.',
   },
   onboarding: {
@@ -122,6 +126,7 @@ export const ton: TranslationKeys = {
     myRecords: 'Zilembedwe Zyangu',
     viewRecords: 'Amulange zilembedwe zyanu',
     completeProfile: 'Amuzuzikizye profayili yanu kutalika',
+    docsRequired: 'Tumizya NRC a Layisense ya Kulemba mu Profile kutaanguna',
   },
   records: {
     createTitle: 'Cilembedwe Cipya ca Golide',
@@ -501,6 +506,19 @@ export const ton: TranslationKeys = {
     miningLicense: 'Layisensi ya Kukomba',
     passport: 'Pasipoti',
     cooperativeCert: 'Setifiketi ya Kooperativu',
+    required: 'Kuyandika',
+    optional: 'Taakuyandiki',
+    mandatoryMissing: 'Kuyandika — tumizya kuti mulembe marekodi',
+  },
+  install: {
+    title: 'Bika Gold Trace',
+    subtitle: 'Bika app eeyi a home screen yako kuti ujane mbubonya.',
+    installButton: 'Bika App',
+    skipButton: 'Zweelela lino',
+    iosStep1: 'Toyola Share button',
+    iosStep2: 'Toyola "Add to Home Screen"',
+    iosStep3: 'Toyola "Add" kusimya',
+    iosContinue: 'Ndamvwa, zweelela',
   },
   nav: {
     home: 'Kuŋanda',

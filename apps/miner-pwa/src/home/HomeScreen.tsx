@@ -5,9 +5,10 @@ import { User, PlusCircle, ClipboardList, FileText, Handshake, AlertTriangle } f
 
 interface Props {
   onNavigate: (screen: string) => void;
+  hasMandatoryDocs?: boolean;
 }
 
-export function HomeScreen({ onNavigate }: Props) {
+export function HomeScreen({ onNavigate, hasMandatoryDocs }: Props) {
   const { user, logout } = useAuth();
   const { t } = useI18n();
   const needsOnboarding = !user?.profile?.profile_completed_at;
@@ -55,7 +56,10 @@ export function HomeScreen({ onNavigate }: Props) {
         <PlaceholderCard
           title={t.home.newRecord}
           icon={PlusCircle}
-          subtitle={t.home.createRecord}
+          subtitle={hasMandatoryDocs === false
+            ? (t.home.docsRequired || 'Upload NRC & Mining License in Profile first')
+            : t.home.createRecord}
+          disabled={hasMandatoryDocs === false}
           onClick={() => onNavigate('record-create')}
         />
         <PlaceholderCard

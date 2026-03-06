@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { apiFetch } from '../api/client';
-import { DOCUMENT_TYPES } from '@asm-kyc/shared';
+import { DOCUMENT_TYPES, MANDATORY_DOCUMENT_TYPES } from '@asm-kyc/shared';
 import type { DocumentListResponse, DocumentResponse } from '@asm-kyc/shared';
 import { CreditCard, Pickaxe, BookOpen, ScrollText, FileText, type LucideIcon } from 'lucide-react';
 
@@ -33,6 +33,9 @@ export function DocumentUpload() {
 
   const getDocByType = (docType: string) =>
     documents.find((d) => d.doc_type === docType);
+
+  const isMandatory = (docType: string) =>
+    (MANDATORY_DOCUMENT_TYPES as readonly string[]).includes(docType);
 
   const handleUpload = async (docType: string, file: File) => {
     setUploading(docType);
@@ -91,7 +94,7 @@ export function DocumentUpload() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                border: doc ? '1px solid #16a34a' : '1px solid #e5e7eb',
+                border: doc ? '1px solid #16a34a' : (isMandatory(docType) ? '1px solid var(--color-error)' : '1px solid #e5e7eb'),
                 borderRadius: 10,
                 background: doc ? '#f0fdf4' : '#fff',
               }}
@@ -101,13 +104,22 @@ export function DocumentUpload() {
               </span>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{meta.label}</div>
+                <div style={{ fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {meta.label}
+                  {isMandatory(docType) && (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: doc ? 'var(--color-success)' : 'var(--color-error)', textTransform: 'uppercase' }}>
+                      {doc ? (t.documents?.required || 'Required') : (t.documents?.required || 'Required')}
+                    </span>
+                  )}
+                </div>
                 {doc ? (
                   <div style={{ fontSize: 12, color: '#16a34a' }}>
                     Uploaded · AI confidence: {doc.ai_confidence || 'N/A'}
                   </div>
                 ) : (
-                  <div style={{ fontSize: 12, color: '#999' }}>Not uploaded</div>
+                  <div style={{ fontSize: 12, color: isMandatory(docType) ? 'var(--color-error)' : '#999' }}>
+                    {isMandatory(docType) ? (t.documents?.mandatoryMissing || 'Required — upload to create records') : (t.documents?.optional || 'Optional')}
+                  </div>
                 )}
                 {doc?.ai_extracted && (
                   <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>

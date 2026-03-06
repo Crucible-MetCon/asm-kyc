@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useAuth } from './AuthContext';
-import { ApiError } from '../api/client';
-import { COUNTERPARTY_TYPES } from '@asm-kyc/shared';
+import { ApiError, apiFetch } from '../api/client';
+import { COUNTERPARTY_TYPES, MANDATORY_DOCUMENT_TYPES } from '@asm-kyc/shared';
 import { useI18n, type Language } from '../i18n/I18nContext';
 import {
   Pickaxe,
@@ -14,6 +14,8 @@ import {
   BookOpen,
   ScrollText,
   Shield,
+  Camera,
+  CheckCircle,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -39,17 +41,18 @@ const ROLE_OPTIONS: { value: string; labelKey: 'roleMiner' | 'roleTrader' | 'rol
 ];
 
 interface DocInfo {
+  docType: string;
   labelKey: 'docNrc' | 'docMiningLicense' | 'docPassport' | 'docCooperativeCert';
   icon: LucideIcon;
-  required: boolean;
+  mandatory: boolean;
   roles?: string[];
 }
 
 const DOC_INFO: DocInfo[] = [
-  { labelKey: 'docNrc', icon: CreditCard, required: true },
-  { labelKey: 'docMiningLicense', icon: Pickaxe, required: false, roles: ['MINER_USER'] },
-  { labelKey: 'docPassport', icon: BookOpen, required: false },
-  { labelKey: 'docCooperativeCert', icon: ScrollText, required: false, roles: ['MINER_USER'] },
+  { docType: 'NRC', labelKey: 'docNrc', icon: CreditCard, mandatory: true },
+  { docType: 'MINING_LICENSE', labelKey: 'docMiningLicense', icon: Pickaxe, mandatory: true, roles: ['MINER_USER'] },
+  { docType: 'PASSPORT', labelKey: 'docPassport', icon: BookOpen, mandatory: false },
+  { docType: 'COOPERATIVE_CERT', labelKey: 'docCooperativeCert', icon: ScrollText, mandatory: false, roles: ['MINER_USER'] },
 ];
 
 export function RegisterScreen({ onSwitchToLogin }: Props) {
@@ -82,8 +85,28 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
   const relevantDocs = DOC_INFO.filter(
     (d) => !d.roles || d.roles.includes(form.role),
   );
-  const requiredDocs = relevantDocs.filter((d) => d.required);
-  const optionalDocs = relevantDocs.filter((d) => !d.required);
+  const mandatoryDocs = relevantDocs.filter((d) => d.mandatory);
+  const optionalDocs = relevantDocs.filter((d) => !d.mandatory);
+
+  // Track selected document files for upload after registration
+  const [docFiles, setDocFiles] = useState<Record<string, { dataUri: string; fileName: string }>>({});
+  const [uploadingDocs, setUploadingDocs] = useState(false);
+
+  const handleDocFile = (docType: string, file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      setDocFiles(prev => ({ ...prev, [docType]: { dataUri: reader.result as string, fileName: file.name } }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeDocFile = (docType: string) => {
+    setDocFiles(prev => {
+      const next = { ...prev };
+      delete next[docType];
+      return next;
+    });
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -95,6 +118,23 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
         preferred_name: form.preferred_name || undefined,
         counterparty_type: isMiner ? form.counterparty_type : 'TRADER_AGGREGATOR',
       });
+
+      // Upload any selected documents (user is now authenticated)
+      const docEntries = Object.entries(docFiles);
+      if (docEntries.length > 0) {
+        setUploadingDocs(true);
+        for (const [docType, { dataUri }] of docEntries) {
+          try {
+            await apiFetch(`/documents/${docType}`, {
+              method: 'POST',
+              body: JSON.stringify({ image_data: dataUri }),
+            });
+          } catch {
+            // Non-critical — user can re-upload from Profile later
+          }
+        }
+        setUploadingDocs(false);
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         const body = err.body as { message?: string | unknown[] } | null;
@@ -118,7 +158,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
     <div className="screen screen-centered">
       <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 440 }}>
         <div className="auth-header">
-          <img src="/favicon.svg" alt="ASM Gold Trace" className="auth-logo" />
+          <img src="/favicon.svg" alt="Gold Trace" className="auth-logo" />
           <h1>{t.auth.createAccount}</h1>
           <p>{t.auth.registerSubtitle}</p>
         </div>
@@ -170,7 +210,7 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
           </div>
         </div>
 
-        {/* ── Section 3: Document Info ── */}
+        {/* ── Section 3: Document Upload ── */}
         <div className="form-group">
           <label>{t.auth.documentsNeeded}</label>
           <div className="doc-info-card">
@@ -178,36 +218,153 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
               <Shield size={16} />
               <span>{t.auth.documentsNeededHint}</span>
             </div>
+            <p style={{ fontSize: 12, color: '#888', margin: '8px 0 0' }}>
+              {t.auth.docsCanCompleteLater || 'You can also complete this later in your Profile.'}
+            </p>
+          </div>
 
-            {requiredDocs.length > 0 && (
-              <div className="doc-info-section">
-                <span className="doc-info-label">{t.auth.requiredDocuments}</span>
-                {requiredDocs.map((doc) => {
-                  const DocIcon = doc.icon;
-                  return (
-                    <div key={doc.labelKey} className="doc-info-row">
-                      <DocIcon size={16} />
-                      <span>{t.auth[doc.labelKey]}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+            {mandatoryDocs.map((doc) => {
+              const DocIcon = doc.icon;
+              const selected = docFiles[doc.docType];
+              return (
+                <div
+                  key={doc.docType}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: 10, borderRadius: 10,
+                    border: selected ? '1px solid var(--color-success)' : '1px solid var(--color-error)',
+                    background: selected ? '#f0fdf4' : '#fff',
+                  }}
+                >
+                  <span style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 36, height: 36, borderRadius: 8,
+                    background: selected ? '#dcfce7' : '#fef2f2',
+                    color: selected ? 'var(--color-success)' : 'var(--color-error)',
+                  }}>
+                    {selected ? <CheckCircle size={18} /> : <DocIcon size={18} />}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {t.auth[doc.labelKey]}
+                      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-error)', textTransform: 'uppercase' }}>
+                        {t.documents?.required || 'Required'}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                    {selected ? (
+                      <div style={{ fontSize: 11, color: 'var(--color-success)' }}>
+                        {selected.fileName}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 11, color: '#999' }}>
+                        {t.auth.tapToUpload || 'Tap to upload or take photo'}
+                      </div>
+                    )}
+                  </div>
+                  {selected ? (
+                    <button
+                      type="button"
+                      onClick={() => removeDocFile(doc.docType)}
+                      style={{
+                        background: 'none', border: '1px solid #ccc', borderRadius: 6,
+                        padding: '4px 10px', fontSize: 11, cursor: 'pointer', color: '#666',
+                      }}
+                    >
+                      {t.common.cancel}
+                    </button>
+                  ) : (
+                    <label style={{
+                      cursor: 'pointer', background: 'var(--color-gold)', color: '#fff',
+                      padding: '6px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                      display: 'flex', alignItems: 'center', gap: 4,
+                    }}>
+                      <Camera size={14} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleDocFile(doc.docType, file);
+                          e.target.value = '';
+                        }}
+                        style={{ display: 'none' }}
+                      />
+                      {t.auth.upload || 'Upload'}
+                    </label>
+                  )}
+                </div>
+              );
+            })}
 
-            {optionalDocs.length > 0 && (
-              <div className="doc-info-section">
-                <span className="doc-info-label">{t.auth.optionalDocuments}</span>
-                {optionalDocs.map((doc) => {
-                  const DocIcon = doc.icon;
-                  return (
-                    <div key={doc.labelKey} className="doc-info-row">
-                      <DocIcon size={16} />
-                      <span>{t.auth[doc.labelKey]}</span>
+            {optionalDocs.map((doc) => {
+              const DocIcon = doc.icon;
+              const selected = docFiles[doc.docType];
+              return (
+                <div
+                  key={doc.docType}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: 10, borderRadius: 10,
+                    border: selected ? '1px solid var(--color-success)' : '1px solid #e5e7eb',
+                    background: selected ? '#f0fdf4' : '#fff',
+                  }}
+                >
+                  <span style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 36, height: 36, borderRadius: 8,
+                    background: selected ? '#dcfce7' : '#f3f4f6',
+                    color: selected ? 'var(--color-success)' : '#999',
+                  }}>
+                    {selected ? <CheckCircle size={18} /> : <DocIcon size={18} />}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {t.auth[doc.labelKey]}
+                      <span style={{ fontSize: 10, color: '#999' }}>{t.documents?.optional || 'Optional'}</span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                    {selected ? (
+                      <div style={{ fontSize: 11, color: 'var(--color-success)' }}>{selected.fileName}</div>
+                    ) : (
+                      <div style={{ fontSize: 11, color: '#999' }}>{t.auth.tapToUpload || 'Tap to upload or take photo'}</div>
+                    )}
+                  </div>
+                  {selected ? (
+                    <button
+                      type="button"
+                      onClick={() => removeDocFile(doc.docType)}
+                      style={{
+                        background: 'none', border: '1px solid #ccc', borderRadius: 6,
+                        padding: '4px 10px', fontSize: 11, cursor: 'pointer', color: '#666',
+                      }}
+                    >
+                      {t.common.cancel}
+                    </button>
+                  ) : (
+                    <label style={{
+                      cursor: 'pointer', background: '#e5e7eb', color: '#555',
+                      padding: '6px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                      display: 'flex', alignItems: 'center', gap: 4,
+                    }}>
+                      <Camera size={14} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleDocFile(doc.docType, file);
+                          e.target.value = '';
+                        }}
+                        style={{ display: 'none' }}
+                      />
+                      {t.auth.upload || 'Upload'}
+                    </label>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -296,8 +453,12 @@ export function RegisterScreen({ onSwitchToLogin }: Props) {
           </div>
         )}
 
-        <button type="submit" className="btn btn-primary btn-full" disabled={submitting}>
-          {submitting ? t.auth.creatingAccount : t.auth.createAccount}
+        <button type="submit" className="btn btn-primary btn-full" disabled={submitting || uploadingDocs}>
+          {uploadingDocs
+            ? (t.auth.uploadingDocuments || 'Uploading documents...')
+            : submitting
+              ? t.auth.creatingAccount
+              : t.auth.createAccount}
         </button>
 
         <div className="auth-footer">

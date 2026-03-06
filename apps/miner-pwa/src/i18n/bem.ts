@@ -57,6 +57,10 @@ export const bem: TranslationKeys = {
     docPassport: 'Pasipoti',
     docCooperativeCert: 'Sertifiketi ya Cooperative',
     docNameMismatch: 'Ishina pa ici calembwa tapali fyalukuta na ishina ilyo mwapeele. Tatolelenimo ishina lyenu.',
+    docsCanCompleteLater: 'Mungapwisha ici ninshi mu Profile yenu.',
+    tapToUpload: 'Findeni ukutuma nelyo ukufota',
+    upload: 'Tumeni',
+    uploadingDocuments: 'Batuma ifyalembwa...',
     docDobMismatch: 'Ubushiku bwa kupyalwa pa ici calembwa tapali fyalukuta. Tatolelenimo ubushiku bwenu.',
   },
   onboarding: {
@@ -122,6 +126,7 @@ export const bem: TranslationKeys = {
     myRecords: 'Amarekoodi Yandi',
     viewRecords: 'Moneni amarekoodi yenu',
     completeProfile: 'Pelelesheni profailo yenu pa kutampa',
+    docsRequired: 'Tumeni NRC ne Layisense ya Makwebo mu Profile first',
   },
   records: {
     createTitle: 'Rekoodi Ipya ya Golide',
@@ -501,6 +506,19 @@ export const bem: TranslationKeys = {
     miningLicense: 'Lisense ya Kukisha',
     passport: 'Pasipoti',
     cooperativeCert: 'Sertifiketi ya Cooperative',
+    required: 'Yakabikwa',
+    optional: 'Takwaba amafya',
+    mandatoryMissing: 'Yakabikwa — tumeni pa kupanga amalembo',
+  },
+  install: {
+    title: 'Ikeni Gold Trace',
+    subtitle: 'Bikeni iyi app pa home screen yenu pakuti musangile bwangu.',
+    installButton: 'Ikeni App',
+    skipButton: 'Pundukeni nomba',
+    iosStep1: 'Tobeni pa Share button',
+    iosStep2: 'Tobeni "Add to Home Screen"',
+    iosStep3: 'Tobeni "Add" ukucita sure',
+    iosContinue: 'Twalimona, twendeleni',
   },
   nav: {
     home: 'Kunyumba',

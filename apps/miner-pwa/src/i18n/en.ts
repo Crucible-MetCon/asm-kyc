@@ -54,6 +54,10 @@ export const en = {
     docMiningLicense: 'Mining License',
     docPassport: 'Passport',
     docCooperativeCert: 'Cooperative Certificate',
+    docsCanCompleteLater: 'You can also complete this later in your Profile.',
+    tapToUpload: 'Tap to upload or take photo',
+    upload: 'Upload',
+    uploadingDocuments: 'Uploading documents...',
     // Document validation
     docNameMismatch: 'The name on this document does not match the name you provided. Please verify your full name.',
     docDobMismatch: 'The date of birth on this document does not match. Please verify your date of birth.',
@@ -121,6 +125,7 @@ export const en = {
     myRecords: 'My Records',
     viewRecords: 'View submitted records',
     completeProfile: 'Complete your profile to get started',
+    docsRequired: 'Upload NRC & Mining License in Profile first',
   },
   records: {
     createTitle: 'New Gold Record',
@@ -500,6 +505,19 @@ export const en = {
     miningLicense: 'Mining License',
     passport: 'Passport',
     cooperativeCert: 'Cooperative Certificate',
+    required: 'Required',
+    optional: 'Optional',
+    mandatoryMissing: 'Required — upload to create records',
+  },
+  install: {
+    title: 'Install Gold Trace',
+    subtitle: 'Add this app to your home screen for quick access and offline support.',
+    installButton: 'Install App',
+    skipButton: 'Skip for now',
+    iosStep1: 'Tap the Share button',
+    iosStep2: 'Tap "Add to Home Screen"',
+    iosStep3: 'Tap "Add" to confirm',
+    iosContinue: 'Got it, continue',
   },
   nav: {
     home: 'Home',

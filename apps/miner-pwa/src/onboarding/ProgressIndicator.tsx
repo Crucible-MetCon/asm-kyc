@@ -11,6 +11,7 @@ export function ProgressIndicator({ current, total }: Props) {
     t.onboarding.step1Title,
     t.onboarding.step2Title,
     t.onboarding.step3Title,
+    t.onboarding.step4Title,
   ];
 
   return (

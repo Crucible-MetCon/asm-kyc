@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { I18nProvider, useI18n, type Language } from './i18n/I18nContext';
 import { LoginScreen } from './auth/LoginScreen';
@@ -23,6 +23,9 @@ import { SurveyFlow } from './surveys/SurveyFlow';
 import { SyncStatusBanner } from './offline/SyncStatusBanner';
 import { initSyncEngine, teardownSyncEngine } from './offline/syncEngine';
 import { FeatureFlagProvider } from './config/FeatureFlagContext';
+import { InstallPromptScreen } from './pwa/InstallPromptScreen';
+import { usePwaInstall } from './hooks/usePwaInstall';
+import { MANDATORY_DOCUMENT_TYPES } from '@asm-kyc/shared';
 import {
   Home,
   ClipboardList,
@@ -60,10 +63,18 @@ function AppContent() {
   const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
   const [selectedSurveySlug, setSelectedSurveySlug] = useState<string | null>(null);
+  const [surveyRefreshKey, setSurveyRefreshKey] = useState(0);
+  const [installPromptDismissed, setInstallPromptDismissed] = useState(false);
+  const wasOnRegisterRef = useRef(false);
+  const { deferredPrompt, isInstalled, isIos, canPrompt, promptInstall } = usePwaInstall();
 
   const isTraderOrRefiner = user?.role === 'TRADER_USER' || user?.role === 'REFINER_USER'
     || user?.role === 'AGGREGATOR_USER' || user?.role === 'MELTER_USER' || user?.role === 'PROCESSOR_USER';
   const isMiner = user?.role === 'MINER_USER';
+
+  // LBMA compliance: check if mandatory documents have been uploaded
+  const uploadedDocs = user?.uploaded_doc_types ?? [];
+  const hasMandatoryDocs = MANDATORY_DOCUMENT_TYPES.every(dt => uploadedDocs.includes(dt));
 
   // Initialize sync engine when user is logged in
   // MUST be before any early returns to satisfy Rules of Hooks
@@ -79,10 +90,38 @@ function AppContent() {
   }
 
   if (!user) {
+    wasOnRegisterRef.current = authScreen === 'register';
     return authScreen === 'register' ? (
       <RegisterScreen onSwitchToLogin={() => setAuthScreen('login')} />
     ) : (
       <LoginScreen onSwitchToRegister={() => setAuthScreen('register')} />
+    );
+  }
+
+  // Show PWA install prompt after registration (once only)
+  const showInstallPrompt =
+    wasOnRegisterRef.current
+    && !installPromptDismissed
+    && !isInstalled
+    && canPrompt
+    && !localStorage.getItem('pwa-install-dismissed');
+
+  if (showInstallPrompt) {
+    const dismiss = () => {
+      setInstallPromptDismissed(true);
+      localStorage.setItem('pwa-install-dismissed', '1');
+      wasOnRegisterRef.current = false;
+    };
+    return (
+      <InstallPromptScreen
+        isIos={isIos}
+        hasNativePrompt={!!deferredPrompt}
+        onContinue={dismiss}
+        onInstall={async () => {
+          await promptInstall();
+          dismiss();
+        }}
+      />
     );
   }
 
@@ -208,6 +247,7 @@ function AppContent() {
       case 'surveys':
         return (
           <SurveyListScreen
+            key={surveyRefreshKey}
             onStartSurvey={(slug) => {
               setSelectedSurveySlug(slug);
               setAppScreen('survey-flow');
@@ -218,7 +258,10 @@ function AppContent() {
         return (
           <SurveyFlow
             slug={selectedSurveySlug!}
-            onComplete={() => setAppScreen('surveys')}
+            onComplete={() => {
+              setSurveyRefreshKey(k => k + 1);
+              setAppScreen('surveys');
+            }}
             onBack={() => setAppScreen('surveys')}
           />
         );
@@ -266,7 +309,7 @@ function AppContent() {
         if (isTraderOrRefiner) {
           return <TraderHomeScreen onNavigate={(screen) => setAppScreen(screen as AppScreen)} />;
         }
-        return <HomeScreen onNavigate={(screen) => setAppScreen(screen as AppScreen)} />;
+        return <HomeScreen onNavigate={(screen) => setAppScreen(screen as AppScreen)} hasMandatoryDocs={hasMandatoryDocs} />;
     }
   };
 
@@ -306,6 +349,7 @@ function AppContent() {
       icon: User,
       active: activeTab === 'profile',
       onClick: () => setAppScreen('profile'),
+      badge: !hasMandatoryDocs ? 'error' as const : undefined,
     },
   ];
 
@@ -339,6 +383,7 @@ function AppContent() {
       icon: User,
       active: activeTab === 'profile',
       onClick: () => setAppScreen('profile'),
+      badge: !hasMandatoryDocs ? 'error' as const : undefined,
     },
   ];
 

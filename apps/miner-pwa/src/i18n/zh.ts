@@ -58,6 +58,10 @@ export const zh: TranslationKeys = {
     docCooperativeCert: '合作社证书',
     // Document validation
     docNameMismatch: '此证件上的姓名与您提供的姓名不一致，请核实您的全名。',
+    docsCanCompleteLater: '您也可以稍后在个人资料中完成。',
+    tapToUpload: '点击上传或拍照',
+    upload: '上传',
+    uploadingDocuments: '正在上传文件...',
     docDobMismatch: '此证件上的出生日期不一致，请核实您的出生日期。',
   },
   onboarding: {
@@ -123,6 +127,7 @@ export const zh: TranslationKeys = {
     myRecords: '我的记录',
     viewRecords: '查看已提交的记录',
     completeProfile: '请完善您的资料以开始使用',
+    docsRequired: '请先在个人资料中上传NRC和采矿许可证',
   },
   records: {
     createTitle: '新建黄金记录',
@@ -502,6 +507,19 @@ export const zh: TranslationKeys = {
     miningLicense: '采矿许可证',
     passport: '护照',
     cooperativeCert: '合作社证书',
+    required: '必需',
+    optional: '可选',
+    mandatoryMissing: '必需 — 上传后才能创建记录',
+  },
+  install: {
+    title: '安装 Gold Trace',
+    subtitle: '将此应用添加到主屏幕，以便快速访问和离线使用。',
+    installButton: '安装应用',
+    skipButton: '暂时跳过',
+    iosStep1: '点击"分享"按钮',
+    iosStep2: '点击"添加到主屏幕"',
+    iosStep3: '点击"添加"确认',
+    iosContinue: '知道了，继续',
   },
   nav: {
     home: '首页',

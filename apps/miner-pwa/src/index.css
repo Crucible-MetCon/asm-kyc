@@ -227,6 +227,53 @@ a,
   font-weight: 500;
 }
 
+.tab-badge-dot {
+  position: absolute;
+  top: -2px;
+  right: -6px;
+  width: 8px;
+  height: 8px;
+  background: var(--color-error);
+  border-radius: 50%;
+}
+
+.tab-item.tab-badge-error {
+  color: var(--color-error);
+}
+
+.tab-item.tab-badge-error.active {
+  color: var(--color-error);
+}
+
+/* --- PWA Install Prompt --- */
+.install-steps {
+  text-align: left;
+  margin: 24px 0;
+}
+
+.install-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+.install-step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-gold-light);
+  color: var(--color-gold);
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 /* --- Cards --- */
 
 .card-grid {

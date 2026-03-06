@@ -4,6 +4,7 @@ import { RegisterInputSchema, LoginInputSchema } from '@asm-kyc/shared';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { serializeProfile } from '../lib/serialize.js';
 
+
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 const COOKIE_OPTIONS = {
@@ -86,6 +87,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       username: user.username,
       role: user.role,
       profile: serializeProfile(user.miner_profile),
+      uploaded_doc_types: [],
     });
   });
 
@@ -134,11 +136,17 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const cookieName = getCookieName(request);
     reply.setCookie(cookieName, session.id, COOKIE_OPTIONS);
 
+    const documents = await prisma.document.findMany({
+      where: { user_id: user.id },
+      select: { doc_type: true },
+    });
+
     return {
       id: user.id,
       username: user.username,
       role: user.role,
       profile: serializeProfile(user.miner_profile),
+      uploaded_doc_types: documents.map(d => d.doc_type),
     };
   });
 

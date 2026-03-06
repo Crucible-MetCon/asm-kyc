@@ -50,3 +50,7 @@ export type RiskLevel = (typeof RISK_LEVELS)[number];
 // Phase 8: Document types
 export const DOCUMENT_TYPES = ['NRC', 'MINING_LICENSE', 'PASSPORT', 'COOPERATIVE_CERT'] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
+
+// LBMA compliance: documents that must be uploaded before creating gold records
+export const MANDATORY_DOCUMENT_TYPES = ['NRC', 'MINING_LICENSE'] as const;
+export type MandatoryDocumentType = (typeof MANDATORY_DOCUMENT_TYPES)[number];

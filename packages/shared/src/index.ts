@@ -150,9 +150,11 @@ export {
   SURVEY_REWARD_STATUSES,
   RISK_LEVELS,
   DOCUMENT_TYPES,
+  MANDATORY_DOCUMENT_TYPES,
   type SurveyRewardStatus,
   type RiskLevel,
   type DocumentType,
+  type MandatoryDocumentType,
 } from './constants.js';
 
 // Phase 7: Survey question definitions & risk rules

@@ -14,9 +14,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'ASM Gold Trace',
+        name: 'Gold Trace',
         short_name: 'Gold Trace',
-        description: 'ASM Gold Traceability and Due Diligence',
+        description: 'Gold Traceability and Due Diligence',
         theme_color: '#b8860b',
         background_color: '#fafafa',
         display: 'standalone',

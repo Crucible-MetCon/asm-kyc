@@ -41,7 +41,7 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
           {/* Brand header */}
           <div className="login-brand">
             <img src="/favicon.svg" alt="" className="login-logo" aria-hidden="true" />
-            <h1 className="login-title">ASM Gold Trace</h1>
+            <h1 className="login-title">Gold Trace</h1>
             <p className="login-subtitle">{t.auth.signInSubtitle}</p>
             <div className="login-trust">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -154,7 +154,7 @@ export function LoginScreen({ onSwitchToRegister }: Props) {
             Admin Portal
           </a>
           <span className="login-footer-sep">·</span>
-          <span className="login-copyright">© {new Date().getFullYear()} ASM Gold Trace</span>
+          <span className="login-copyright">© {new Date().getFullYear()} Gold Trace</span>
         </footer>
       </div>
     </div>

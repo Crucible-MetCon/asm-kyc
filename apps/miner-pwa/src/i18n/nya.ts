@@ -57,6 +57,10 @@ export const nya: TranslationKeys = {
     docPassport: 'Pasipoti',
     docCooperativeCert: 'Setifiketi ya Cooperative',
     docNameMismatch: 'Dzina pa chikalata ichi silikugwirizana ndi dzina lomwe munapereka. Chonde onetsetsani dzina lanu lonse.',
+    docsCanCompleteLater: 'Mutha kumaliza izi pambuyo mu Profile yanu.',
+    tapToUpload: 'Dinani kuti mutumize kapena mufote',
+    upload: 'Tumizani',
+    uploadingDocuments: 'Kutumiza zolemba...',
     docDobMismatch: 'Tsiku lobadwa pa chikalata ichi silikugwirizana. Chonde onetsetsani tsiku lanu lobadwa.',
   },
   onboarding: {
@@ -122,6 +126,7 @@ export const nya: TranslationKeys = {
     myRecords: 'Marekhodi Anga',
     viewRecords: 'Onani marekhodi omwe munatumiza',
     completeProfile: 'Tsiridzani mbiri yanu kuti muyambe',
+    docsRequired: 'Tumizani NRC ndi Layisense ya Migodi mu Profile kaye',
   },
   records: {
     createTitle: 'Rekhodi Yatsopano ya Golide',
@@ -501,6 +506,19 @@ export const nya: TranslationKeys = {
     miningLicense: 'Layisensi ya Kukumba',
     passport: 'Pasipoti',
     cooperativeCert: 'Setifiketi ya Cooperative',
+    required: 'Kofunikira',
+    optional: 'Kosankha',
+    mandatoryMissing: 'Kofunikira — tumizani kuti mupange zolemba',
+  },
+  install: {
+    title: 'Ikani Gold Trace',
+    subtitle: 'Ikani app iyi pa home screen yanu kuti mupeze msanga.',
+    installButton: 'Ikani App',
+    skipButton: 'Dumphani pano',
+    iosStep1: 'Dinani batani la Share',
+    iosStep2: 'Dinani "Add to Home Screen"',
+    iosStep3: 'Dinani "Add" kutsimikiza',
+    iosContinue: 'Ndamvetsa, pitirizani',
   },
   nav: {
     home: 'Kunyumba',

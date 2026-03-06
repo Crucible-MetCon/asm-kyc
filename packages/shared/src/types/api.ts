@@ -25,6 +25,7 @@ export interface MeResponse {
   username: string;
   role: string;
   profile: UserProfile | null;
+  uploaded_doc_types: string[];
 }
 
 export interface ConsentVersionResponse {

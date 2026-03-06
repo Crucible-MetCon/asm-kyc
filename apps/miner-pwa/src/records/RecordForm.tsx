@@ -25,9 +25,9 @@ interface Props {
 }
 
 const GOLD_TYPE_OPTIONS = [
-  { value: 'RAW_GOLD', icon: rawGoldIcon },
-  { value: 'BAR', icon: barIcon },
-  { value: 'LOT', icon: lotIcon },
+  { value: 'RAW_GOLD', icon: rawGoldIcon, labelKey: 'goldTypeRaw' as const, descKey: 'goldTypeRawDesc' as const },
+  { value: 'BAR', icon: barIcon, labelKey: 'goldTypeBar' as const, descKey: 'goldTypeBarDesc' as const },
+  { value: 'LOT', icon: lotIcon, labelKey: 'goldTypeLot' as const, descKey: 'goldTypeLotDesc' as const },
 ] as const;
 
 export function RecordForm({ record, onSaved, onBack }: Props) {
@@ -37,11 +37,16 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
   const isEdit = !!record;
   const isMiner = user?.role === 'MINER_USER';
 
+  // Wizard step: 1 = gold type, 2 = photos, 3 = details & submit
+  const [step, setStep] = useState(isEdit ? 3 : 1);
+
   const [form, setForm] = useState({
     weight_grams: record?.weight_grams?.toString() ?? '',
     estimated_purity: record?.estimated_purity?.toString() ?? '',
-    origin_mine_site: record?.origin_mine_site ?? user?.profile?.mine_site_name ?? '',
-    extraction_date: record?.extraction_date ? record.extraction_date.split('T')[0] : '',
+    origin_mine_site: record?.origin_mine_site ?? user?.profile?.mine_site_location ?? '',
+    extraction_date: record?.extraction_date
+      ? record.extraction_date.split('T')[0]
+      : new Date().toISOString().split('T')[0],
     gold_type: record?.gold_type ?? '',
     notes: record?.notes ?? '',
   });
@@ -85,7 +90,6 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
   const [partners, setPartners] = useState<SalesPartnerListItem[]>([]);
 
   useEffect(() => {
-    // Load mine sites
     apiFetch<MineSiteListResponse>('/mine-sites')
       .then((data) => {
         setMineSites(data.sites);
@@ -96,7 +100,6 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
       })
       .catch(() => {});
 
-    // Load sales partners for buyer selection
     apiFetch<SalesPartnerListResponse>('/sales-partners')
       .then((data) => {
         setPartners(data.partners);
@@ -116,15 +119,6 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
     });
   };
 
-  const goldTypeLabel = (val: string) => {
-    const map: Record<string, string> = {
-      RAW_GOLD: t.records.goldTypeRaw,
-      BAR: t.records.goldTypeBar,
-      LOT: t.records.goldTypeLot,
-    };
-    return map[val] || val;
-  };
-
   const buildPayload = () => ({
     weight_grams: form.weight_grams ? parseFloat(form.weight_grams) : undefined,
     estimated_purity: form.estimated_purity ? parseFloat(form.estimated_purity) : undefined,
@@ -132,7 +126,6 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
     extraction_date: form.extraction_date || undefined,
     gold_type: form.gold_type || undefined,
     notes: form.notes || undefined,
-    // Phase 6: enhanced fields
     scale_photo_data: scalePhoto?.data || undefined,
     scale_photo_mime: scalePhoto?.mime || undefined,
     xrf_photo_data: xrfPhoto?.data || undefined,
@@ -144,7 +137,6 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
     mine_site_id: mineSiteId || undefined,
     buyer_id: buyerId || undefined,
     metal_purities: purities.length > 0 ? purities : undefined,
-    // Phase 8: miner 2-photo data
     top_photo_data: topPhotoData || undefined,
     side_photo_data: sidePhotoData || undefined,
   });
@@ -165,15 +157,13 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
   };
 
   const uploadPhotos = async (recordId: string) => {
-    // Remove deleted photos
     for (const photoId of removedPhotoIds) {
       try {
         await apiFetch(`/records/${recordId}/photos/${photoId}`, { method: 'DELETE' });
       } catch {
-        // continue on error
+        // continue
       }
     }
-    // Upload new photos
     for (const photoData of newPhotos) {
       try {
         await apiFetch(`/records/${recordId}/photos`, {
@@ -181,7 +171,7 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
           body: JSON.stringify({ photo_data: photoData }),
         });
       } catch {
-        // continue on error
+        // continue
       }
     }
   };
@@ -191,7 +181,6 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
     setTimeout(() => setToast(''), 3000);
   };
 
-  /** Save offline as a draft in IndexedDB + enqueue for sync */
   const saveOffline = async (submitAfterSync: boolean) => {
     const payload = buildPayload();
     const draft: DraftRecord = {
@@ -227,7 +216,6 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
       return;
     }
 
-    // Offline path: save locally and enqueue for sync
     if (!isOnline && !isEdit) {
       await saveOffline(false);
       return;
@@ -249,13 +237,11 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
         });
         await uploadPhotos(saved.id);
       }
-      // Re-fetch to get updated photos
       const refreshed = await apiFetch<RecordResponse>(`/records/${saved.id}`);
       showToast(t.records.draftSaved);
       onSaved(refreshed);
     } catch (err) {
       if (err instanceof NetworkError && !isEdit) {
-        // Went offline during save — fall back to offline storage
         await saveOffline(false);
         return;
       }
@@ -275,7 +261,6 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
   const handleSubmit = async () => {
     const payload = buildPayload();
 
-    // For miners: relaxed validation (AI fills weight/purity)
     if (isMiner) {
       const parsed = MinerRecordSubmitSchema.safeParse(payload);
       if (!parsed.success) {
@@ -287,13 +272,11 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
         setErrors(fieldErrors);
         return;
       }
-      // Ensure either AI or manual weight
       if (!payload.weight_grams) {
         setErrors({ weight_grams: (t.records as Record<string, string>).minerWeightHint || 'Take photos for AI estimation or enter weight manually' });
         return;
       }
     } else {
-      // Non-miners: strict validation
       const parsed = RecordSubmitSchema.safeParse(payload);
       if (!parsed.success) {
         const fieldErrors: Record<string, string> = {};
@@ -311,7 +294,6 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
   const confirmSubmit = async () => {
     setShowConfirm(false);
 
-    // Offline path: save locally with submit flag
     if (!isOnline && !isEdit) {
       await saveOffline(true);
       return;
@@ -319,7 +301,6 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
 
     setSubmitting(true);
     try {
-      // Save first
       const payload = buildPayload();
       let saved: RecordResponse;
       if (isEdit && record) {
@@ -335,7 +316,6 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
         });
         await uploadPhotos(saved.id);
       }
-      // Then submit
       const submitted = await apiFetch<RecordResponse>(`/records/${saved.id}/submit`, {
         method: 'POST',
       });
@@ -343,7 +323,6 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
       onSaved(submitted);
     } catch (err) {
       if (err instanceof NetworkError && !isEdit) {
-        // Went offline during submit — fall back to offline storage
         await saveOffline(true);
         return;
       }
@@ -367,41 +346,62 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
     }
   };
 
-  return (
-    <div className="screen">
-      <div className="record-header">
-        <button type="button" className="back-button" onClick={onBack}>
-          ← {t.common.back}
-        </button>
-        <h1 style={{ fontSize: 20, fontWeight: 700 }}>
-          {isEdit ? t.records.editTitle : t.records.createTitle}
-        </h1>
-        <div style={{ width: 60 }} />
-      </div>
-
-      {errors._form && <div className="error-message">{errors._form}</div>}
-
-      {/* Gold Type Selector */}
+  // ─── Step 1: Gold Type Selection ───
+  const renderStep1 = () => (
+    <>
       <div className="form-group">
-        <label>{t.records.goldType}</label>
-        <div className="gold-type-selector">
-          {GOLD_TYPE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              className={`gold-type-option${form.gold_type === opt.value ? ' selected' : ''}`}
-              onClick={() => update('gold_type', opt.value)}
-            >
-              <img src={opt.icon} alt={goldTypeLabel(opt.value)} className="gold-type-icon" />
-              {goldTypeLabel(opt.value)}
-            </button>
-          ))}
+        <label style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, display: 'block' }}>
+          {(t.records as Record<string, string>).selectGoldType || 'Select Gold Type'}
+        </label>
+        <div className="role-card-list">
+          {GOLD_TYPE_OPTIONS.map((opt) => {
+            const isActive = form.gold_type === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                className={`role-card${isActive ? ' role-card-active' : ''}`}
+                onClick={() => update('gold_type', opt.value)}
+              >
+                <span className="role-card-icon">
+                  <img src={opt.icon} alt="" className="gold-type-tile-icon" />
+                </span>
+                <span className="role-card-info">
+                  <span className="role-card-name">
+                    {(t.records as Record<string, string>)[opt.labelKey]}
+                  </span>
+                  <span className="role-card-desc">
+                    {(t.records as Record<string, string>)[opt.descKey]}
+                  </span>
+                </span>
+                <span className={`role-card-radio${isActive ? ' role-card-radio-active' : ''}`} />
+              </button>
+            );
+          })}
         </div>
         {errors.gold_type && <span className="field-error">{errors.gold_type}</span>}
       </div>
 
-      {/* Miner: 2-photo capture with AI estimation */}
-      {isMiner && (
+      <div className="step-buttons" style={{ marginTop: 24 }}>
+        <button type="button" className="btn btn-secondary" onClick={onBack}>
+          {t.common.back}
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={!form.gold_type}
+          onClick={() => setStep(2)}
+        >
+          {t.common.next}
+        </button>
+      </div>
+    </>
+  );
+
+  // ─── Step 2: Photo Capture ───
+  const renderStep2 = () => (
+    <>
+      {isMiner ? (
         <GoldPhotoCapture
           recordId={record?.id ?? null}
           goldType={form.gold_type || 'RAW_GOLD'}
@@ -425,9 +425,54 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
             setSidePhotoData(side);
           }}
         />
+      ) : (
+        <>
+          <ScaleCapture
+            onWeightExtracted={(weight, photoData, mimeType) => {
+              setScalePhoto({ data: photoData, mime: mimeType });
+              if (weight != null) {
+                update('weight_grams', weight.toString());
+              }
+            }}
+            onPhotoOnly={(photoData, mimeType) => {
+              setScalePhoto({ data: photoData, mime: mimeType });
+            }}
+          />
+          <div style={{ marginTop: 16 }}>
+            <XrfCapture
+              onPuritiesExtracted={(extractedPurities, photoData, mimeType) => {
+                setXrfPhoto({ data: photoData, mime: mimeType });
+                setPurities(extractedPurities);
+                const au = extractedPurities.find((p) => p.element === 'Au');
+                if (au) {
+                  update('estimated_purity', au.purity.toString());
+                }
+              }}
+              onPhotoOnly={(photoData, mimeType) => {
+                setXrfPhoto({ data: photoData, mime: mimeType });
+              }}
+            />
+          </div>
+        </>
       )}
 
-      {/* Miner: show editable weight/purity only after estimation */}
+      <div className="step-buttons" style={{ marginTop: 24 }}>
+        <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>
+          {t.common.back}
+        </button>
+        <button type="button" className="btn btn-primary" onClick={() => setStep(3)}>
+          {t.common.next}
+        </button>
+      </div>
+    </>
+  );
+
+  // ─── Step 3: Details & Submit ───
+  const renderStep3 = () => (
+    <>
+      {errors._form && <div className="error-message">{errors._form}</div>}
+
+      {/* Miner: show editable weight/purity after AI estimation */}
       {isMiner && aiEstimation && (
         <>
           <div className="form-group">
@@ -495,6 +540,27 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
         </>
       )}
 
+      {/* Non-miner: Metal Purities Table */}
+      {!isMiner && (purities.length > 0 || xrfPhoto) && (
+        <div style={{ marginTop: 16 }}>
+          <MetalPurityTable purities={purities} onChange={setPurities} />
+        </div>
+      )}
+
+      {/* Location */}
+      <div style={{ marginTop: 16 }}>
+        <LocationFields
+          country={country}
+          locality={locality}
+          latitude={latitude}
+          longitude={longitude}
+          onCountryChange={setCountry}
+          onLocalityChange={setLocality}
+          onLatitudeChange={setLatitude}
+          onLongitudeChange={setLongitude}
+        />
+      </div>
+
       {/* Origin Mine Site */}
       <div className="form-group">
         <label htmlFor="origin_mine_site">{t.records.originMineSite}</label>
@@ -522,71 +588,15 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
         {errors.extraction_date && <span className="field-error">{errors.extraction_date}</span>}
       </div>
 
-      {/* Non-miner: Scale Photo Capture */}
-      {!isMiner && (
-        <ScaleCapture
-          onWeightExtracted={(weight, photoData, mimeType) => {
-            setScalePhoto({ data: photoData, mime: mimeType });
-            if (weight != null) {
-              update('weight_grams', weight.toString());
-            }
-          }}
-          onPhotoOnly={(photoData, mimeType) => {
-            setScalePhoto({ data: photoData, mime: mimeType });
-          }}
-        />
-      )}
-
-      {/* Non-miner: XRF Photo Capture */}
-      {!isMiner && (
-        <div style={{ marginTop: 16 }}>
-          <XrfCapture
-            onPuritiesExtracted={(extractedPurities, photoData, mimeType) => {
-              setXrfPhoto({ data: photoData, mime: mimeType });
-              setPurities(extractedPurities);
-              const au = extractedPurities.find((p) => p.element === 'Au');
-              if (au) {
-                update('estimated_purity', au.purity.toString());
-              }
-            }}
-            onPhotoOnly={(photoData, mimeType) => {
-              setXrfPhoto({ data: photoData, mime: mimeType });
-            }}
-          />
-        </div>
-      )}
-
-      {/* Non-miner: Metal Purities Table */}
-      {!isMiner && (purities.length > 0 || xrfPhoto) && (
-        <div style={{ marginTop: 16 }}>
-          <MetalPurityTable purities={purities} onChange={setPurities} />
-        </div>
-      )}
-
-      {/* Location */}
-      <div style={{ marginTop: 16 }}>
-        <LocationFields
-          country={country}
-          locality={locality}
-          latitude={latitude}
-          longitude={longitude}
-          onCountryChange={setCountry}
-          onLocalityChange={setLocality}
-          onLatitudeChange={setLatitude}
-          onLongitudeChange={setLongitude}
-        />
-      </div>
-
       {/* Mine Site Selection */}
       {mineSites.length > 0 && (
-        <div className="form-group" style={{ marginTop: 16 }}>
+        <div className="form-group">
           <label>{t.vision.selectMineSite}</label>
           <select
             className="form-input"
             value={mineSiteId}
             onChange={(e) => {
               setMineSiteId(e.target.value);
-              // Auto-fill origin from mine site
               const site = mineSites.find((s) => s.id === e.target.value);
               if (site) {
                 update('origin_mine_site', site.name);
@@ -603,7 +613,7 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
 
       {/* Buyer Selection */}
       {partners.length > 0 && (
-        <div className="form-group" style={{ marginTop: 8 }}>
+        <div className="form-group">
           <label>{t.vision.selectBuyer}</label>
           <select
             className="form-input"
@@ -633,7 +643,7 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
         />
       </div>
 
-      {/* Photos */}
+      {/* Additional Photos */}
       <div className="form-group">
         <PhotoCapture
           photos={photos}
@@ -648,10 +658,10 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
         <button
           type="button"
           className="btn btn-secondary"
-          onClick={handleSaveDraft}
+          onClick={isEdit ? onBack : () => setStep(2)}
           disabled={saving || submitting}
         >
-          {saving ? t.records.saving : t.records.saveDraft}
+          {isEdit ? t.common.cancel : t.common.back}
         </button>
         <button
           type="button"
@@ -662,6 +672,38 @@ export function RecordForm({ record, onSaved, onBack }: Props) {
           {submitting ? t.records.submitting : t.records.submitRecord}
         </button>
       </div>
+    </>
+  );
+
+  // ─── Step Titles ───
+  const stepTitles: Record<number, string> = {
+    1: isEdit ? t.records.editTitle : t.records.createTitle,
+    2: (t.records as Record<string, string>).stepPhotos || 'Take Photos',
+    3: (t.records as Record<string, string>).stepDetails || 'Record Details',
+  };
+
+  return (
+    <div className="screen">
+      <div className="record-header">
+        <button
+          type="button"
+          className="back-button"
+          onClick={() => {
+            if (step === 1 || isEdit) onBack();
+            else setStep(step - 1);
+          }}
+        >
+          ← {t.common.back}
+        </button>
+        <h1 style={{ fontSize: 20, fontWeight: 700 }}>
+          {stepTitles[step]}
+        </h1>
+        <div style={{ width: 60 }} />
+      </div>
+
+      {step === 1 && renderStep1()}
+      {step === 2 && renderStep2()}
+      {step === 3 && renderStep3()}
 
       {/* Confirmation Dialog */}
       {showConfirm && (

@@ -1524,6 +1524,12 @@ a,
   color: var(--color-gold);
 }
 
+.gold-type-tile-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .role-card-info {
   flex: 1;
   display: flex;

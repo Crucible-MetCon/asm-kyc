@@ -182,6 +182,12 @@ export const zh: TranslationKeys = {
     createdAt: '创建时间',
     updatedAt: '最后更新',
     editDraft: '编辑草稿',
+    selectGoldType: '选择黄金类型',
+    goldTypeRawDesc: '直接来自矿场的未加工金矿石或金块',
+    goldTypeBarDesc: '经过熔炼铸造的金条或金锭',
+    goldTypeLotDesc: '一批或一组汇集在一起的黄金物品',
+    stepPhotos: '拍摄照片',
+    stepDetails: '记录详情',
   },
   salesPartners: {
     title: '我的销售伙伴',

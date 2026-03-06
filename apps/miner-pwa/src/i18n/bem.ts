@@ -181,6 +181,12 @@ export const bem: TranslationKeys = {
     createdAt: 'Yapangwa',
     updatedAt: 'Yachinjiwa',
     editDraft: 'Chinjeni Draft',
+    selectGoldType: 'Saleni Umutundu wa Golide',
+    goldTypeRawDesc: 'Golide iyashishiwa ukufuma mu mushimbi',
+    goldTypeBarDesc: 'Golide iyasungilwa no kupangwa mu cibali',
+    goldTypeLotDesc: 'Ulupeto lwa golide iyasonkanikepo pamo',
+    stepPhotos: 'Kopeleni Ifishinte',
+    stepDetails: 'Amashiwi ya Rekoodi',
   },
   salesPartners: {
     title: 'Abashitishako Bandi',

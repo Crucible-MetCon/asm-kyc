@@ -181,6 +181,12 @@ export const ton: TranslationKeys = {
     createdAt: 'Cikapangidwe',
     updatedAt: 'Cikazandulwa',
     editDraft: 'Sandula Draft',
+    selectGoldType: 'Amusale Musyobo wa Golide',
+    goldTypeRawDesc: 'Golide yatazwidwe kuzwa mu cikombo',
+    goldTypeBarDesc: 'Golide iyayumununwa akupangwa mu baala',
+    goldTypeLotDesc: 'Muswaangano wa golide zyayobodwe antoomwe',
+    stepPhotos: 'Amufote Zifoto',
+    stepDetails: 'Twaambo twa Cilembedwe',
   },
   salesPartners: {
     title: 'Basikulisyako Bangu',

@@ -181,6 +181,12 @@ export const nya: TranslationKeys = {
     createdAt: 'Chinapangidwa',
     updatedAt: 'Chinasinthidwa Komaliza',
     editDraft: 'Sinthani Draft',
+    selectGoldType: 'Sankhani Mtundu wa Golide',
+    goldTypeRawDesc: 'Golide yosasinthidwa kuchokera kumalo okumbira',
+    goldTypeBarDesc: 'Golide yosungunulidwa ndi kupangidwa nthiko',
+    goldTypeLotDesc: 'Gulu la zinthu za golide zosonkhanitsidwa pamodzi',
+    stepPhotos: 'Jambulani Zithunzi',
+    stepDetails: 'Zambiri za Rekhodi',
   },
   salesPartners: {
     title: 'Ogulitsira Anga',

@@ -180,6 +180,12 @@ export const en = {
     createdAt: 'Created',
     updatedAt: 'Last Updated',
     editDraft: 'Edit Draft',
+    selectGoldType: 'Select Gold Type',
+    goldTypeRawDesc: 'Unprocessed gold ore or nuggets directly from the mine',
+    goldTypeBarDesc: 'Smelted and cast gold in bar or ingot form',
+    goldTypeLotDesc: 'A batch or collection of gold items grouped together',
+    stepPhotos: 'Take Photos',
+    stepDetails: 'Record Details',
   },
   salesPartners: {
     title: 'My Sales Partners',

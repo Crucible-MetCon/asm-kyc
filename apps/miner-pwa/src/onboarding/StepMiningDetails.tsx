@@ -4,7 +4,6 @@ import { ProfileStep2Schema } from '@asm-kyc/shared';
 
 interface Props {
   data: {
-    mine_site_name: string;
     mine_site_location: string;
     mining_license_number: string;
   };
@@ -18,7 +17,11 @@ export function StepMiningDetails({ data, onChange, onBack, onNext }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
-    const result = ProfileStep2Schema.safeParse(data);
+    const result = ProfileStep2Schema.safeParse({
+      mine_site_name: '',
+      mine_site_location: data.mine_site_location,
+      mining_license_number: data.mining_license_number,
+    });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
       for (const issue of result.error.issues) {
@@ -39,32 +42,16 @@ export function StepMiningDetails({ data, onChange, onBack, onNext }: Props) {
   return (
     <div className="onboarding-step">
       <div className="form-group">
-        <label className="form-label" htmlFor="mine_site_name">
-          {t.onboarding.mineSiteName}
-        </label>
-        <input
-          id="mine_site_name"
-          type="text"
-          className={`form-input${errors.mine_site_name ? ' input-error' : ''}`}
-          value={data.mine_site_name}
-          onChange={(e) => onChange({ mine_site_name: e.target.value })}
-        />
-        {errors.mine_site_name && (
-          <span className="field-error">{errors.mine_site_name}</span>
-        )}
-      </div>
-
-      <div className="form-group">
         <label className="form-label" htmlFor="mine_site_location">
-          {t.onboarding.mineSiteLocation}
+          {t.onboarding.miningAreaDescription}
         </label>
-        <input
+        <textarea
           id="mine_site_location"
-          type="text"
           className={`form-input${errors.mine_site_location ? ' input-error' : ''}`}
-          placeholder={t.onboarding.mineSiteLocationHint}
+          placeholder={t.onboarding.miningAreaHint}
           value={data.mine_site_location}
           onChange={(e) => onChange({ mine_site_location: e.target.value })}
+          rows={4}
         />
         {errors.mine_site_location && (
           <span className="field-error">{errors.mine_site_location}</span>

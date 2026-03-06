@@ -29,7 +29,7 @@ export const profileRoutes: FastifyPluginAsync = async (app) => {
         nrc_number: data.nrc_number,
         date_of_birth: new Date(data.date_of_birth),
         gender: data.gender,
-        mine_site_name: data.mine_site_name,
+        mine_site_name: data.mine_site_name || null,
         mine_site_location: data.mine_site_location,
         mining_license_number: data.mining_license_number || null,
         profile_completed_at: new Date(),

@@ -13,7 +13,6 @@ interface OnboardingData {
   nrc_number: string;
   date_of_birth: string;
   gender: string;
-  mine_site_name: string;
   mine_site_location: string;
   mining_license_number: string;
   consent_accepted: boolean;
@@ -38,7 +37,6 @@ export function OnboardingFlow({ onComplete, initialData, isEdit }: Props) {
     nrc_number: initialData?.nrc_number ?? '',
     date_of_birth: initialData?.date_of_birth ?? '',
     gender: initialData?.gender ?? '',
-    mine_site_name: initialData?.mine_site_name ?? '',
     mine_site_location: initialData?.mine_site_location ?? '',
     mining_license_number: initialData?.mining_license_number ?? '',
     consent_accepted: false,
@@ -62,7 +60,7 @@ export function OnboardingFlow({ onComplete, initialData, isEdit }: Props) {
           nrc_number: data.nrc_number,
           date_of_birth: data.date_of_birth,
           gender: data.gender,
-          mine_site_name: data.mine_site_name,
+          mine_site_name: '',
           mine_site_location: data.mine_site_location,
           mining_license_number: data.mining_license_number,
         }),

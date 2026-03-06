@@ -42,7 +42,6 @@ export function ProfileScreen({ onEdit, onManageSites }: Props) {
     'nrc_number',
     'date_of_birth',
     'gender',
-    'mine_site_name',
     'mine_site_location',
   ];
   const filledFields = requiredFields.filter((f) => profile?.[f]);
@@ -118,12 +117,7 @@ export function ProfileScreen({ onEdit, onManageSites }: Props) {
       <div className="profile-section">
         <h2>{t.profile.miningDetails}</h2>
         <ProfileField
-          label={t.onboarding.mineSiteName}
-          value={profile?.mine_site_name}
-          t={t}
-        />
-        <ProfileField
-          label={t.onboarding.mineSiteLocation}
+          label={t.onboarding.miningAreaDescription}
           value={profile?.mine_site_location}
           t={t}
         />

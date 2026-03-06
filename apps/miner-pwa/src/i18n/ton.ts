@@ -77,6 +77,8 @@ export const ton: TranslationKeys = {
     mineSiteName: 'Zina lya Cikombo',
     mineSiteLocation: 'Busena bwa Cikombo',
     mineSiteLocationHint: 'Amulembe GPS naa amupandulule busena',
+    miningAreaDescription: 'Busena bwa Kukkomba',
+    miningAreaHint: 'Mutala: Ku Mulonga wa Kifubwa kumbali lya Solwezi, North-Western Province',
     miningLicense: 'Nambala ya Layisensi ya Cikombo',
     consentTitle: 'Kuzumina kwa Due Diligence',
     consentAccept: 'Ndabala alimwi ndazumina twaambo twalembedwe',

@@ -77,6 +77,8 @@ export const nya: TranslationKeys = {
     mineSiteName: 'Dzina la Malo Okumbira',
     mineSiteLocation: 'Malo Okumbira',
     mineSiteLocationHint: 'Lembani GPS kapena fotokozani malo ake',
+    miningAreaDescription: 'Dera Lokumbira',
+    miningAreaHint: 'Mwachitsanzo: Kumtsinje wa Kifubwa pafupi ndi Solwezi, North-Western Province',
     miningLicense: 'Nambala ya Layisensi ya Kukumba',
     consentTitle: 'Chilolezo cha Due Diligence',
     consentAccept: 'Ndawerenga ndipo ndikuvomereza mfundo zapamwambazi',

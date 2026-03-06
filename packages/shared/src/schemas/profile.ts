@@ -21,8 +21,8 @@ export type ProfileStep1 = z.infer<typeof ProfileStep1Schema>;
 
 // Step 2: Mining Details
 export const ProfileStep2Schema = z.object({
-  mine_site_name: z.string().min(1, 'Mine site name is required').max(200),
-  mine_site_location: z.string().min(1, 'Location is required').max(500),
+  mine_site_name: z.string().max(200).optional().or(z.literal('')),
+  mine_site_location: z.string().min(1, 'Mining area description is required').max(500),
   mining_license_number: z.string().max(100).optional().or(z.literal('')),
 });
 export type ProfileStep2 = z.infer<typeof ProfileStep2Schema>;

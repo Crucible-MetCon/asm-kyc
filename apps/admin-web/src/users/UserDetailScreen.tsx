@@ -174,11 +174,7 @@ export function UserDetailScreen({ userId, onBack }: UserDetailScreenProps) {
               <div className="value">{user.profile.home_language === 'bem' ? 'Bemba' : 'English'}</div>
             </div>
             <div className="detail-field">
-              <label>Mine Site</label>
-              <div className="value">{user.profile.mine_site_name ?? '—'}</div>
-            </div>
-            <div className="detail-field">
-              <label>Mine Location</label>
+              <label>Mining Area</label>
               <div className="value">{user.profile.mine_site_location ?? '—'}</div>
             </div>
             <div className="detail-field">

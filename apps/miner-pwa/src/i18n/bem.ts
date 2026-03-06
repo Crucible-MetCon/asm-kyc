@@ -77,6 +77,8 @@ export const bem: TranslationKeys = {
     mineSiteName: 'Ishina lya Mushimbi',
     mineSiteLocation: 'Incende ya Mushimbi',
     mineSiteLocationHint: 'Lembeni GPS nangu balanshanyeni incende',
+    miningAreaDescription: 'Incende ya Kushimba',
+    miningAreaHint: 'Mwaice: Ku mumana wa Kifubwa mupepi na Solwezi, North-Western Province',
     miningLicense: 'Inambala ya Lisense ya Mushimbi',
     consentTitle: 'Ukusumina kwa Due Diligence',
     consentAccept: 'Nabelenga kabili ndasumina ifyo fyalembwa',

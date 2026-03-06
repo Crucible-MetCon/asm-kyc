@@ -78,6 +78,8 @@ export const zh: TranslationKeys = {
     mineSiteName: '矿点名称',
     mineSiteLocation: '矿点位置',
     mineSiteLocationHint: '输入 GPS 坐标或描述位置',
+    miningAreaDescription: '采矿区域',
+    miningAreaHint: '例如：索尔韦齐附近基富布瓦河沿岸，西北省',
     miningLicense: '采矿许可证编号',
     consentTitle: '尽职调查同意书',
     consentAccept: '我已阅读并接受上述条款',

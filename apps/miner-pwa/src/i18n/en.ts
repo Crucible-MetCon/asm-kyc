@@ -76,6 +76,8 @@ export const en = {
     mineSiteName: 'Mine Site Name',
     mineSiteLocation: 'Mine Site Location',
     mineSiteLocationHint: 'Enter GPS coordinates or describe the location',
+    miningAreaDescription: 'Mining Area',
+    miningAreaHint: 'e.g. Along the Kifubwa River near Solwezi, North-Western Province',
     miningLicense: 'Mining License Number',
     consentTitle: 'Due Diligence Consent',
     consentAccept: 'I have read and accept the above terms',

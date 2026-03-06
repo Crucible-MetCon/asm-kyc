@@ -142,7 +142,6 @@ function AppContent() {
                   ? user.profile.date_of_birth.split('T')[0]
                   : '',
                 gender: user.profile.gender ?? '',
-                mine_site_name: user.profile.mine_site_name ?? '',
                 mine_site_location: user.profile.mine_site_location ?? '',
                 mining_license_number: user.profile.mining_license_number ?? '',
                 consent_version: user.profile.consent_version ?? '',

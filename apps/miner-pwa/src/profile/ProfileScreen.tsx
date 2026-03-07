@@ -32,18 +32,25 @@ function genderLabel(
   return map[gender] ?? gender;
 }
 
+function getLicenceLabel(role: string, t: ReturnType<typeof useI18n>['t']): string {
+  switch (role) {
+    case 'REFINER_USER': return t.onboarding.refiningLicence;
+    case 'AGGREGATOR_USER': return t.onboarding.aggregatorLicence;
+    case 'MELTER_USER': return t.onboarding.melterLicence;
+    case 'TRADER_USER': return t.onboarding.traderLicence;
+    default: return t.onboarding.licenceNumber;
+  }
+}
+
 export function ProfileScreen({ onEdit, onManageSites }: Props) {
   const { user } = useAuth();
   const { t, lang, setLang } = useI18n();
   const profile = user?.profile as UserProfile | null | undefined;
+  const isMiner = user?.role === 'MINER_USER';
 
-  const requiredFields: (keyof UserProfile)[] = [
-    'full_name',
-    'nrc_number',
-    'date_of_birth',
-    'gender',
-    'mine_site_location',
-  ];
+  const requiredFields: (keyof UserProfile)[] = isMiner
+    ? ['full_name', 'nrc_number', 'date_of_birth', 'gender', 'mine_site_location']
+    : ['full_name', 'nrc_number', 'date_of_birth', 'gender'];
   const filledFields = requiredFields.filter((f) => profile?.[f]);
   const hasConsent = !!profile?.consent_version;
   const totalRequired = requiredFields.length + 1;
@@ -112,21 +119,30 @@ export function ProfileScreen({ onEdit, onManageSites }: Props) {
           value={genderLabel(profile?.gender ?? null, t)}
           t={t}
         />
+        {!isMiner && user?.role && (
+          <ProfileField
+            label={getLicenceLabel(user.role, t)}
+            value={profile?.mining_license_number}
+            t={t}
+          />
+        )}
       </div>
 
-      <div className="profile-section">
-        <h2>{t.profile.miningDetails}</h2>
-        <ProfileField
-          label={t.onboarding.miningAreaDescription}
-          value={profile?.mine_site_location}
-          t={t}
-        />
-        <ProfileField
-          label={t.onboarding.miningLicense}
-          value={profile?.mining_license_number}
-          t={t}
-        />
-      </div>
+      {isMiner && (
+        <div className="profile-section">
+          <h2>{t.profile.miningDetails}</h2>
+          <ProfileField
+            label={t.onboarding.miningAreaDescription}
+            value={profile?.mine_site_location}
+            t={t}
+          />
+          <ProfileField
+            label={t.onboarding.miningLicense}
+            value={profile?.mining_license_number}
+            t={t}
+          />
+        </div>
+      )}
 
       {onManageSites && (
         <button

@@ -8,7 +8,7 @@ export const receiptRoutes: FastifyPluginAsync = async (app) => {
 
   // POST /records/:id/receipt — create a receipt for a record
   app.post<{ Params: { id: string } }>('/:id/receipt', {
-    preHandler: [requireRole('TRADER_USER', 'REFINER_USER', 'PROCESSOR_USER')],
+    preHandler: [requireRole('TRADER_USER', 'REFINER_USER', 'PROCESSOR_USER', 'AGGREGATOR_USER', 'MELTER_USER')],
     handler: async (request, reply) => {
       const user = request.user!;
       const recordId = request.params.id;
@@ -23,8 +23,8 @@ export const receiptRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(404).send({ statusCode: 404, error: 'Not Found', message: 'Record not found' });
       }
 
-      if (record.status !== 'SUBMITTED') {
-        return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: 'Record must be in SUBMITTED status' });
+      if (record.status !== 'SUBMITTED' && record.status !== 'PURCHASED') {
+        return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: 'Record must be in SUBMITTED or PURCHASED status' });
       }
 
       // Verify sales partnership

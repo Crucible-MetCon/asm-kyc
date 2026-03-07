@@ -3,16 +3,17 @@ import { useI18n, interpolate } from '../i18n/I18nContext';
 interface Props {
   current: number;
   total: number;
+  isMiner?: boolean;
 }
 
-export function ProgressIndicator({ current, total }: Props) {
+export function ProgressIndicator({ current, total, isMiner = true }: Props) {
   const { t } = useI18n();
-  const stepLabels = [
-    t.onboarding.step1Title,
-    t.onboarding.step2Title,
-    t.onboarding.step3Title,
-    t.onboarding.step4Title,
-  ];
+
+  // Miners: Personal Details → Mining Details → Sales Partners → Consent
+  // Non-miners: Personal Details → Consent
+  const stepLabels = isMiner
+    ? [t.onboarding.step1Title, t.onboarding.step2Title, t.onboarding.step3Title, t.onboarding.step4Title]
+    : [t.onboarding.step1Title, t.onboarding.step4Title];
 
   return (
     <div className="progress-indicator">

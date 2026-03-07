@@ -29,7 +29,10 @@ export function OnboardingFlow({ onComplete, initialData, isEdit }: Props) {
   const { t } = useI18n();
   const { user } = useAuth();
   const isMiner = user?.role === 'MINER_USER';
-  const TOTAL_STEPS = isMiner ? 4 : 3;
+
+  // Miners: 4 steps (Personal → Mining → Sales Partners → Consent)
+  // Non-miners: 2 steps (Personal → Consent)
+  const TOTAL_STEPS = isMiner ? 4 : 2;
 
   const [step, setStep] = useState(1);
   const [data, setData] = useState<OnboardingData>({
@@ -61,7 +64,7 @@ export function OnboardingFlow({ onComplete, initialData, isEdit }: Props) {
           date_of_birth: data.date_of_birth,
           gender: data.gender,
           mine_site_name: '',
-          mine_site_location: data.mine_site_location,
+          mine_site_location: isMiner ? data.mine_site_location : '',
           mining_license_number: data.mining_license_number,
         }),
       });
@@ -86,15 +89,16 @@ export function OnboardingFlow({ onComplete, initialData, isEdit }: Props) {
     }
   };
 
-  // For miners: Step 1 Personal → Step 2 Mining → Step 3 Sales Partners → Step 4 Consent
-  // For traders/refiners: Step 1 Personal → Step 2 Mining → Step 3 Consent
-  const consentStep = isMiner ? 4 : 3;
-  const salesPartnersStep = isMiner ? 3 : -1; // -1 means not shown
+  // Miners: step 1=Personal, 2=Mining, 3=Sales Partners, 4=Consent
+  // Non-miners: step 1=Personal, 2=Consent
+  const consentStep = isMiner ? 4 : 2;
+  const miningStep = isMiner ? 2 : -1;
+  const salesPartnersStep = isMiner ? 3 : -1;
 
   return (
     <div className="screen">
       <h1>{isEdit ? t.profile.editProfile : t.onboarding.title}</h1>
-      <ProgressIndicator current={step} total={TOTAL_STEPS} />
+      <ProgressIndicator current={step} total={TOTAL_STEPS} isMiner={isMiner} />
 
       {error && <div className="error-message">{error}</div>}
 
@@ -102,15 +106,16 @@ export function OnboardingFlow({ onComplete, initialData, isEdit }: Props) {
         <StepPersonalDetails
           data={data}
           onChange={updateData}
-          onNext={() => setStep(2)}
+          onNext={() => setStep(isMiner ? 2 : 2)}
+          role={user?.role}
         />
       )}
-      {step === 2 && (
+      {step === miningStep && (
         <StepMiningDetails
           data={data}
           onChange={updateData}
           onBack={() => setStep(1)}
-          onNext={() => setStep(isMiner ? 3 : 3)}
+          onNext={() => setStep(3)}
         />
       )}
       {step === salesPartnersStep && (
@@ -123,7 +128,7 @@ export function OnboardingFlow({ onComplete, initialData, isEdit }: Props) {
         <StepConsent
           data={data}
           onChange={updateData}
-          onBack={() => setStep(isMiner ? salesPartnersStep : 2)}
+          onBack={() => setStep(isMiner ? salesPartnersStep : 1)}
           onSubmit={handleSubmit}
           submitting={submitting}
         />

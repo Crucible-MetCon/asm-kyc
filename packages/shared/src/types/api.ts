@@ -125,6 +125,7 @@ export interface PurchaseItemResponse {
     extraction_date: string | null;
     miner_name: string | null;
     photo_count: number;
+    receipt: RecordReceiptResponse | null;
   };
 }
 

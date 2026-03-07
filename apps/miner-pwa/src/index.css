@@ -1097,6 +1097,103 @@ a,
   flex-shrink: 0;
 }
 
+/* Receipt badges on record cards */
+.receipt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.receipt-badge-complete {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* Receipt capture expandable panel */
+.receipt-capture-panel {
+  padding: 16px;
+  background: var(--color-surface-secondary, #f9fafb);
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  margin-bottom: 12px;
+}
+
+.receipt-capture-panel .capture-section {
+  margin-bottom: 16px;
+}
+
+.receipt-step-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 12px;
+}
+
+.receipt-review-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.receipt-review-field:last-child {
+  border-bottom: none;
+}
+
+.receipt-review-label {
+  color: var(--color-text-secondary);
+}
+
+.receipt-purities-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.receipt-purity-tag {
+  padding: 2px 8px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.receipt-discrepancy-warning {
+  padding: 8px 12px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--color-warning);
+  margin-top: 8px;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  min-height: 32px;
+  font-size: 13px;
+}
+
+.receipt-card-wrapper .record-card {
+  margin-bottom: 0;
+}
+
+.receipt-card-wrapper.receipt-active .record-card {
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom: none;
+}
+
 /* Photo Capture */
 
 .photo-grid {

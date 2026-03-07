@@ -204,9 +204,14 @@ export function serializePurchaseItem(
     record: PrismaRecord & {
       creator: User & { miner_profile: MinerProfile | null };
       _count: { photos: number };
+      receipts?: Array<RecordReceipt & {
+        receiver: User & { miner_profile: MinerProfile | null };
+        purities: MetalPurity[];
+      }>;
     };
   },
 ): PurchaseItemResponse {
+  const firstReceipt = pi.record.receipts?.[0];
   return {
     id: pi.id,
     record_id: pi.record_id,
@@ -219,6 +224,7 @@ export function serializePurchaseItem(
       extraction_date: pi.record.extraction_date?.toISOString() ?? null,
       miner_name: pi.record.creator.miner_profile?.full_name ?? pi.record.creator.username,
       photo_count: pi.record._count.photos,
+      receipt: firstReceipt ? serializeReceipt(firstReceipt) : null,
     },
   };
 }
@@ -230,6 +236,10 @@ export function serializePurchase(
         record: PrismaRecord & {
           creator: User & { miner_profile: MinerProfile | null };
           _count: { photos: number };
+          receipts?: Array<RecordReceipt & {
+            receiver: User & { miner_profile: MinerProfile | null };
+            purities: MetalPurity[];
+          }>;
         };
       }
     >;

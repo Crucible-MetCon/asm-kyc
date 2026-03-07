@@ -28,7 +28,10 @@ export const ProfileStep2Schema = z.object({
 export type ProfileStep2 = z.infer<typeof ProfileStep2Schema>;
 
 // Combined profile update (sent to API)
-export const ProfileUpdateSchema = ProfileStep1Schema.merge(ProfileStep2Schema);
+// mine_site_location is optional — only required for miners (validated in StepMiningDetails)
+export const ProfileUpdateSchema = ProfileStep1Schema.merge(ProfileStep2Schema).extend({
+  mine_site_location: z.string().max(500).optional().or(z.literal('')),
+});
 export type ProfileUpdate = z.infer<typeof ProfileUpdateSchema>;
 
 // Consent acceptance

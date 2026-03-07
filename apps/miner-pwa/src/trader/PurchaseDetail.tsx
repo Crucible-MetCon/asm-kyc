@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { apiFetch, NetworkError } from '../api/client';
 import { useI18n } from '../i18n/I18nContext';
 import { setCachedPurchaseDetail, getCachedPurchaseDetail } from '../offline/db';
-import type { PurchaseResponse } from '@asm-kyc/shared';
+import { ReceiptCapture } from './ReceiptCapture';
+import type { PurchaseResponse, RecordReceiptResponse } from '@asm-kyc/shared';
 import rawGoldIcon from '../assets/gold-types/raw-gold.png';
 import barIcon from '../assets/gold-types/bar.png';
 import lotIcon from '../assets/gold-types/lot.png';
@@ -22,6 +23,7 @@ export function PurchaseDetail({ purchaseId, onBack }: Props) {
   const { t } = useI18n();
   const [purchase, setPurchase] = useState<PurchaseResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeReceiptRecordId, setActiveReceiptRecordId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -61,6 +63,21 @@ export function PurchaseDetail({ purchaseId, onBack }: Props) {
       case 'FAILED': return { label: t.trader.statusFailed, className: 'status-payment-failed' };
       default: return null;
     }
+  };
+
+  const handleReceiptComplete = (recordId: string, receipt: RecordReceiptResponse) => {
+    setActiveReceiptRecordId(null);
+    setPurchase((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map((item) =>
+          item.record.id === recordId
+            ? { ...item, record: { ...item.record, receipt } }
+            : item,
+        ),
+      };
+    });
   };
 
   if (loading) {
@@ -137,28 +154,73 @@ export function PurchaseDetail({ purchaseId, onBack }: Props) {
         {t.trader.purchasedRecords}
       </h2>
       <div className="card-grid" style={{ marginTop: 0 }}>
-        {purchase.items.map((item) => (
-          <div key={item.id} className="record-card">
-            <img
-              src={GOLD_TYPE_ICONS[item.record.gold_type || 'RAW_GOLD'] || rawGoldIcon}
-              alt={goldTypeLabel(item.record.gold_type)}
-              className="record-card-icon"
-            />
-            <div className="record-card-body">
-              <div className="record-card-title">
-                {goldTypeLabel(item.record.gold_type) || 'Gold'}
-                {item.record.weight_grams != null && ` — ${item.record.weight_grams}g`}
+        {purchase.items.map((item) => {
+          const isActive = activeReceiptRecordId === item.record.id;
+          const hasReceipt = !!item.record.receipt;
+
+          return (
+            <div
+              key={item.id}
+              className={`receipt-card-wrapper${isActive ? ' receipt-active' : ''}`}
+            >
+              <div className="record-card">
+                <img
+                  src={GOLD_TYPE_ICONS[item.record.gold_type || 'RAW_GOLD'] || rawGoldIcon}
+                  alt={goldTypeLabel(item.record.gold_type)}
+                  className="record-card-icon"
+                />
+                <div className="record-card-body">
+                  <div className="record-card-title">
+                    {goldTypeLabel(item.record.gold_type) || 'Gold'}
+                    {item.record.weight_grams != null && ` — ${item.record.weight_grams}g`}
+                  </div>
+                  <div className="record-card-meta">
+                    {t.trader.minerName}: {item.record.miner_name}
+                  </div>
+                  <div className="record-card-meta">
+                    {item.record.origin_mine_site || '—'}
+                    {item.record.estimated_purity != null && ` · ${item.record.estimated_purity}%`}
+                  </div>
+
+                  {/* Receipt status */}
+                  {hasReceipt ? (
+                    <div className="receipt-badge receipt-badge-complete">
+                      {t.receipt.receiptRecorded}
+                      {item.record.receipt!.receipt_weight != null &&
+                        ` — ${item.record.receipt!.receipt_weight}g`}
+                      {item.record.receipt!.has_xrf_photo && ' · XRF'}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ marginTop: 8 }}
+                      onClick={() =>
+                        setActiveReceiptRecordId(isActive ? null : item.record.id)
+                      }
+                    >
+                      {t.receipt.addReceipt}
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="record-card-meta">
-                {t.trader.minerName}: {item.record.miner_name}
-              </div>
-              <div className="record-card-meta">
-                {item.record.origin_mine_site || '—'}
-                {item.record.estimated_purity != null && ` · ${item.record.estimated_purity}%`}
-              </div>
+
+              {/* Expandable receipt capture */}
+              {isActive && (
+                <div className="receipt-capture-panel">
+                  <ReceiptCapture
+                    recordId={item.record.id}
+                    minerWeight={item.record.weight_grams}
+                    onComplete={(receipt) =>
+                      handleReceiptComplete(item.record.id, receipt)
+                    }
+                    onCancel={() => setActiveReceiptRecordId(null)}
+                  />
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -2,20 +2,33 @@ import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { ProfileStep1Schema } from '@asm-kyc/shared';
 
+function getLicenceLabel(role: string, t: ReturnType<typeof useI18n>['t']): string {
+  switch (role) {
+    case 'REFINER_USER': return t.onboarding.refiningLicence;
+    case 'AGGREGATOR_USER': return t.onboarding.aggregatorLicence;
+    case 'MELTER_USER': return t.onboarding.melterLicence;
+    case 'TRADER_USER': return t.onboarding.traderLicence;
+    default: return t.onboarding.licenceNumber;
+  }
+}
+
 interface Props {
   data: {
     full_name: string;
     nrc_number: string;
     date_of_birth: string;
     gender: string;
+    mining_license_number?: string;
   };
   onChange: (fields: Partial<Props['data']>) => void;
   onNext: () => void;
+  role?: string;
 }
 
-export function StepPersonalDetails({ data, onChange, onNext }: Props) {
+export function StepPersonalDetails({ data, onChange, onNext, role }: Props) {
   const { t } = useI18n();
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const isMiner = role === 'MINER_USER';
 
   const validate = () => {
     const result = ProfileStep1Schema.safeParse(data);
@@ -101,6 +114,22 @@ export function StepPersonalDetails({ data, onChange, onNext }: Props) {
         </select>
         {errors.gender && <span className="field-error">{errors.gender}</span>}
       </div>
+
+      {!isMiner && role && (
+        <div className="form-group">
+          <label className="form-label" htmlFor="mining_license_number">
+            {getLicenceLabel(role, t)}{' '}
+            <span className="optional-hint">({t.common.optional})</span>
+          </label>
+          <input
+            id="mining_license_number"
+            type="text"
+            className="form-input"
+            value={data.mining_license_number ?? ''}
+            onChange={(e) => onChange({ mining_license_number: e.target.value })}
+          />
+        </div>
+      )}
 
       <button type="button" className="btn btn-primary btn-full" onClick={handleNext}>
         {t.common.next}
